@@ -6,4 +6,3 @@
   :licence "BSD-style"
   :depends-on (:iterate :alexandria)
   :components ((:file "package")))
-
