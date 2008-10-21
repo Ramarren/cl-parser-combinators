@@ -47,21 +47,22 @@
   #'(lambda (inp)
       (let ((results1 (funcall parser1 inp)))
 	(if results1
-	    (car results1)
+	    (list (car results1))
 	    (let ((results2 (funcall parser2 inp)))
 	      (when results2
-		(car results2)))))))
+		(list (car results2))))))))
 
 (defun choices (&rest parser-list)
-  (choice (car parser-list)
-	  (choices (cdr parser-list))))
+  (if (cdr parser-list)
+      (choice (car parser-list)
+	      (apply #'choices (cdr parser-list)))
+      (car parser-list)))
 
 (defun choices1 (&rest parser-list)
   #'(lambda (inp)
-      (let ((results1 (funcall (car parser-list) inp)))
-	(if results1
-	    (car results1)
-	    (choices1 (cdr parser-list))))))
+      (iter (for p in parser-list)
+	    (for result-list = (funcall p inp))
+	    (finding (list (car result-list)) such-that result-list))))
 
 ;;; here parser spec is list of (pattern optional-guard comprehension)
 ;;; using do-like notation, <- is special
