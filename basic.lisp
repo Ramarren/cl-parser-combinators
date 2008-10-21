@@ -52,11 +52,11 @@
 	      (when results2
 		(car results2)))))))
 
-(defun choices (parser-list)
+(defun choices (&rest parser-list)
   (choice (car parser-list)
 	  (choices (cdr parser-list))))
 
-(defun choices1 (parser-list)
+(defun choices1 (&rest parser-list)
   #'(lambda (inp)
       (let ((results1 (funcall (car parser-list) inp)))
 	(if results1
