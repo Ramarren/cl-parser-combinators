@@ -83,3 +83,6 @@
 
 (def-pattern-parser psat
   (_predicate (mdo (<- x (item)) (if (funcall _predicate x) (result x) (zero)))))
+
+(defun parse-string (parser string)
+  (mapcar #'tree-of (funcall parser (coerce string 'list))))
