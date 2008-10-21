@@ -114,8 +114,8 @@
 		 (declare (ignore _))
 		 ,(do-notation (cdr monad-sequence) bind))))))
 
-(def-pattern-parser psat
-  (_predicate (<- x (item)) (if (funcall _predicate x) (result x) (zero))))
+(defmacro mdo (&body spec)
+  (do-notation spec 'bind))
 
 (defmacro def-pattern-parser (name &body parser-patterns)
   (with-unique-names (parameter)
@@ -125,16 +125,30 @@
 		 (collect
 		     (match spec
 		       ((_pattern (where _guard) . _spec)
-			(list _pattern (where _guard) (do-notation _spec 'bind)))
+			(list* _pattern (where _guard) _spec))
 		       ((_pattern (where-not _guard) . _spec)
-			(list _pattern (where-not _guard) (do-notation _spec 'bind)))
+			(list* _pattern (where-not _guard) _spec))
 		       ((_pattern . _spec)
-			(list _pattern (do-notation _spec 'bind)))
+			(list* _pattern _spec))
 		       (_ (error "Error when constructing parser ~a" name)))))))))
+
+(def-pattern-parser psat
+  (_predicate (mdo (<- x (item)) (if (funcall _predicate x) (result x) (zero)))))
 
 (def-pattern-parser pstring?
   (() (result nil))
-  ((_x . _xs) (char? _x) (pstring? _xs) (result (cons _x _xs))))
+  ((_x . _xs) (mdo (char? _x) (pstring? _xs) (result (cons _x _xs)))))
 
 (def-pattern-parser many?
-  (_parser (<- x _parser) (<- xs (many? _parser)) (result (cons x xs))))
+  (_parser (choice (mdo (<- x _parser) (<- xs (many? _parser)) (result (cons x xs))) (result nil))))
+
+(def-pattern-parser many1?
+  (_parser (mdo (<- x _parser) (<- xs (many? _parser)) (result (cons x xs)))))
+
+(defun nat? ()
+  (mdo (<- xs (many1? (digit?))) (result (read-from-string (coerce xs 'string)))))
+
+(defun int? ()
+  (mdo (<- f (choice (mdo (char? #\-) (result #'-)) (result #'identity)))
+       (<- n (nat?))
+       (result (funcall f n))))
