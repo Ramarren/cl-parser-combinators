@@ -53,3 +53,42 @@
 
 (defun sepby? (parser-item parser-separator)
   (choice (sepby1? parser-item parser-separator) (result nil)))
+
+(defun chainl1? (p op)
+  (labels ((rest-chain (x)
+	     (choice
+	      (mdo (<- f op)
+		   (<- y p)
+		   (rest-chain (funcall f x y)))
+	      (result x))))
+    (bind p #'rest-chain)))
+
+(defun nat2? ()
+  (chainl1 (mdo (<- x (digit?))
+		(result (digit-char-p x)))
+	   (result
+	    #'(lambda (x y)
+		(+ (* 10 x) y)))))
+
+(defun chainr1? (p op)
+  (bind p #'(lambda (x)
+	      (choice
+	       (mdo (<- f op)
+		    (<- y (chainr1 p op))
+		    (result (funcall f x y)))
+	       (result x)))))
+
+(defun chainl? (p op v)
+  (choice
+   (chainl1 p op)
+   (result v)))
+
+(defun chainr? (p op v)
+  (choice
+   (chainr1 p op)
+   (result v)))
+
+(defun first? (p);doesn't actually work because there is no laziness, but might free memory at least
+  #'(lambda (inp)
+      (when-let (results (funcall p inp))
+	(list (car results)))))
