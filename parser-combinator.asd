@@ -6,4 +6,5 @@
   :licence "BSD-style"
   :depends-on (:iterate :alexandria :bpm)
   :components ((:file "package")
-	       (:file "basic" :depends-on ("package"))))
+	       (:file "basic" :depends-on ("package"))
+	       (:file "parsers" :depends-on ("package" "basic"))))
