@@ -114,6 +114,9 @@
 		 (declare (ignore _))
 		 ,(do-notation (cdr monad-sequence) bind))))))
 
+(def-pattern-parser psat
+  (_predicate (<- x (item)) (if (funcall _predicate x) (result x) (zero))))
+
 (defmacro def-pattern-parser (name &body parser-patterns)
   (with-unique-names (parameter)
     `(defun ,name (,parameter)
@@ -132,3 +135,6 @@
 (def-pattern-parser pstring?
   (() (result nil))
   ((_x . _xs) (char? _x) (pstring? _xs) (result (cons _x _xs))))
+
+(def-pattern-parser many?
+  (_parser (<- x _parser) (<- xs (many? _parser)) (result (cons x xs))))
