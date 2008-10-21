@@ -4,5 +4,6 @@
   :maintainer " <ramarren@cignet.higersbergernet>"
   :author " <ramarren@cignet.higersbergernet>"
   :licence "BSD-style"
-  :depends-on (:iterate :alexandria)
-  :components ((:file "package")))
+  :depends-on (:iterate :alexandria :bpm)
+  :components ((:file "package")
+	       (:file "basic" :depends-on ("package"))))
