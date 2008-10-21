@@ -7,4 +7,5 @@
   :depends-on (:iterate :alexandria :bpm)
   :components ((:file "package")
 	       (:file "basic" :depends-on ("package"))
-	       (:file "parsers" :depends-on ("package" "basic"))))
+	       (:file "parsers" :depends-on ("package" "basic"))
+	       (:file "memoize" :depends-on ("package"))))
