@@ -68,19 +68,20 @@
 					     (result (cons x xs))))))))
     (choice ne-word (result nil))))
 
+(defun bind-comprehension (input &rest parser-spec)
+  (cond ((null parser-spec)
+	 `(result ,input))
+	(t (destructuring-bind (variable parser . remain) parser-spec
+	     `(bind ,parser
+		    #'(lambda (,variable)
+			,@(when (eql variable '_)
+			    (list `(declare (ignore ,variable))))
+			,(apply #'bind-comprehension input remain)))))))
+
 ;;; spec as in monad comprehensions, result variable parser variable parser...
 (defmacro defparser (name input &body parser-spec)
-  (labels ((recursive-part (input &rest parser-spec)
-	     (cond ((null parser-spec)
-		    `(result ,input))
-		   (t (destructuring-bind (variable parser . remain) parser-spec
-			`(bind ,parser
-			       #'(lambda (,variable)
-				   ,@(when (eql variable '_)
-				       (list `(declare (ignore ,variable))))
-				   ,(apply #'recursive-part input remain))))))))
-    `(defun ,name (,input)
-       ,(apply #'recursive-part input parser-spec))))
+  `(defun ,name (,input)
+     ,(apply #'bind-comprehension input parser-spec)))
 
 (defparser %string? character-list
   _ (char? (car character-list))
@@ -92,3 +93,25 @@
     (if (null character-list)
 	result-nil
 	string-parser)))
+
+;;; here parser spec is list of (pattern optional-guard comprehension)
+;;; using do-like notation, <- is special
+
+(defmacro def-pattern-parser (name &body parser-patterns)
+  (with-unique-names (parameter)
+    `(defun ,name (,parameter)
+       (match ,parameter
+	 ,@(iter (for spec in parser-patterns)
+		 (collect
+		     (match spec
+		       ((_pattern (where _guard) . _spec)
+			(list _pattern (where _guard) (apply #'bind-comprehension parameter _spec)))
+		       ((_pattern (where-not _guard) . _spec)
+			(list _pattern (where-not _guard) (apply #'bind-comprehension parameter _spec)))
+		       ((_pattern . _spec)
+			(list _pattern (apply #'bind-comprehension parameter _spec)))
+		       (_ (error "Error when constructing parser ~a" name)))))))))
+
+(def-pattern-parser pstring?
+  (() nil)
+  ((_x . _xs) _ (char? _x) _ (pstring? _xs)))
