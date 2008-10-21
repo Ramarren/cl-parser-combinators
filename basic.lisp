@@ -152,3 +152,14 @@
   (mdo (<- f (choice (mdo (char? #\-) (result #'-)) (result #'identity)))
        (<- n (nat?))
        (result (funcall f n))))
+
+(defun sepby1? (parser-item parser-separator)
+  (mdo (<- x parser-item)
+       (<- xs (many? (mdo parser-separator (<- y parser-item) (result y))))
+       (result (cons x xs))))
+
+(defun bracket? (parser-open parser-center parser-close)
+  (mdo parser-open (<- xs parser-center) parser-close (result xs)))
+
+(defun sepby? (parser-item parser-separator)
+  (choice (sepby1? parser-item parser-separator) (result nil)))
