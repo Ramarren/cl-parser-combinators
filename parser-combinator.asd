@@ -8,4 +8,5 @@
   :components ((:file "package")
 	       (:file "basic" :depends-on ("package"))
 	       (:file "parsers" :depends-on ("package" "basic"))
-	       (:file "memoize" :depends-on ("package"))))
+	       (:file "memoize" :depends-on ("package"))
+	       (:file "greedy" :depends-on ("package" "basic"))))
