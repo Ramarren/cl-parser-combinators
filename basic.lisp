@@ -43,6 +43,14 @@
       (nconc (funcall parser1 inp)
 	     (funcall parser2 inp))))
 
+(defun choice1 (parser1 parser2)
+  #'(lambda (inp)
+      (let ((results1 (funcall parser1 inp)))
+	(if results1 (car results1)
+	    (let ((results2 (funcall parser2 inp)))
+	      (when results2
+		(car results2)))))))
+
 ;;; here parser spec is list of (pattern optional-guard comprehension)
 ;;; using do-like notation, <- is special
 
