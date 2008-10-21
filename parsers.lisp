@@ -80,12 +80,12 @@
 
 (defun chainl? (p op v)
   (choice
-   (chainl1 p op)
+   (chainl1? p op)
    (result v)))
 
 (defun chainr? (p op v)
   (choice
-   (chainr1 p op)
+   (chainr1? p op)
    (result v)))
 
 (defun first? (p);doesn't actually work because there is no laziness, but might free memory at least
