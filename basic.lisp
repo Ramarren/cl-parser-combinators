@@ -97,6 +97,23 @@
 ;;; here parser spec is list of (pattern optional-guard comprehension)
 ;;; using do-like notation, <- is special
 
+;;; list of either monads: (monad parameters), name bindings (<- name monad)
+;;; simple, no let
+
+(defun do-notation (monad-sequence bind)
+  (match monad-sequence
+    ((_monad . nil)
+     _monad)
+    (((<- _name _monad) . _)
+     `(,bind ,_monad
+	     #'(lambda (,_name)
+		 ,(do-notation (cdr monad-sequence) bind))))
+    ((_monad . _)
+     `(,bind ,_monad
+	     #'(lambda (_)
+		 (declare (ignore _))
+		 ,(do-notation (cdr monad-sequence) bind))))))
+
 (defmacro def-pattern-parser (name &body parser-patterns)
   (with-unique-names (parameter)
     `(defun ,name (,parameter)
@@ -105,13 +122,13 @@
 		 (collect
 		     (match spec
 		       ((_pattern (where _guard) . _spec)
-			(list _pattern (where _guard) (apply #'bind-comprehension parameter _spec)))
+			(list _pattern (where _guard) (do-notation _spec 'bind)))
 		       ((_pattern (where-not _guard) . _spec)
-			(list _pattern (where-not _guard) (apply #'bind-comprehension parameter _spec)))
+			(list _pattern (where-not _guard) (do-notation _spec 'bind)))
 		       ((_pattern . _spec)
-			(list _pattern (apply #'bind-comprehension parameter _spec)))
+			(list _pattern (do-notation _spec 'bind)))
 		       (_ (error "Error when constructing parser ~a" name)))))))))
 
 (def-pattern-parser pstring?
-  (() nil)
-  ((_x . _xs) _ (char? _x) _ (pstring? _xs)))
+  (() (result nil))
+  ((_x . _xs) (char? _x) (pstring? _xs) (result (cons _x _xs))))
