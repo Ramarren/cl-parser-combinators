@@ -70,19 +70,20 @@
 ;;; list of either monads: (monad parameters), name bindings (<- name monad)
 ;;; simple, no let
 
-(defun do-notation (monad-sequence bind)
-  (match monad-sequence
-    ((_monad . nil)
-     _monad)
-    (((<- _name _monad) . _)
-     `(,bind ,_monad
-	     #'(lambda (,_name)
-		 ,(do-notation (cdr monad-sequence) bind))))
-    ((_monad . _)
-     `(,bind ,_monad
-	     #'(lambda (_)
-		 (declare (ignore _))
-		 ,(do-notation (cdr monad-sequence) bind))))))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun do-notation (monad-sequence bind)
+    (match monad-sequence
+      ((_monad . nil)
+       _monad)
+      (((<- _name _monad) . _)
+       `(,bind ,_monad
+	       #'(lambda (,_name)
+		   ,(do-notation (cdr monad-sequence) bind))))
+      ((_monad . _)
+       `(,bind ,_monad
+	       #'(lambda (_)
+		   (declare (ignore _))
+		   ,(do-notation (cdr monad-sequence) bind)))))))
 
 (defmacro mdo (&body spec)
   (do-notation spec 'bind))
