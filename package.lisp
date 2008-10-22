@@ -30,4 +30,14 @@
 	   #:nat?
 	   #:chainr1?
 	   #:chainl?
-	   #:chainr?))
+	   #:chainr?
+	   #:many*
+	   #:many1*
+	   #:sepby1*
+	   #:sepby*
+	   #:chainl1*
+	   #:nat*
+	   #:int*
+	   #:chainr1*
+	   #:chainl*
+	   #:chainr*))
