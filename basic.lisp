@@ -51,7 +51,7 @@
      (let ((parser-promise ,parser-promise)
 	   (parser-promise-generator ,parser-promise-generator))
        #'(lambda (inp)
-	   (iter (for possibility in (funcall (funcall parser-promise) inp))
+	   (iter (for possibility in (funcall (force parser-promise) inp))
 		 (for v = (tree-of possibility))
 		 (for inp-prime = (suffix-of possibility))
 		 (nconcing (funcall (force (funcall parser-promise-generator v)) inp-prime)))))))
@@ -67,18 +67,18 @@
      (let ((parser1-promise ,parser1-promise)
 	   (parser2-promise ,parser2-promise))
        #'(lambda (inp)
-	   (nconc (funcall (funcall parser1-promise) inp)
-		  (funcall (funcall parser2-promise) inp))))))
+	   (nconc (funcall (force parser1-promise) inp)
+		  (funcall (force parser2-promise) inp))))))
 
 (defmacro choice1 (parser1-promise parser2-promise)
   `(delay
      (let ((parser1-promise ,parser1-promise)
 	   (parser2-promise ,parser2-promise))
        #'(lambda (inp)
-	   (let ((results1 (funcall (funcall parser1-promise) inp)))
+	   (let ((results1 (funcall (force parser1-promise) inp)))
 	     (if results1
 		 (list (car results1))
-		 (let ((results2 (funcall (funcall parser2-promise) inp)))
+		 (let ((results2 (funcall (force parser2-promise) inp)))
 		   (when results2
 		     (list (car results2))))))))))
 
@@ -93,7 +93,7 @@
      (let ((parser-promise-list (list ,@parser-promise-list)))
        #'(lambda (inp)
 	   (iter (for p in parser-promise-list)
-		 (for result-list = (funcall (funcall p) inp))
+		 (for result-list = (funcall (force p) inp))
 		 (finding (list (car result-list)) such-that result-list))))))
 
 ;;; here parser spec is list of (pattern optional-guard comprehension)
@@ -145,4 +145,4 @@
 (defun parse-string (parser string)
   (let ((*memo-table* (make-hash-table))
 	(*curtail-table* (make-hash-table)))
-   (mapcar #'tree-of (funcall (funcall parser) (coerce string 'list)))))
+   (mapcar #'tree-of (funcall (force parser) (coerce string 'list)))))
