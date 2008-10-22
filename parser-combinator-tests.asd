@@ -4,7 +4,7 @@
   :maintainer " <ramarren@cignet.higersbergernet>"
   :author " <ramarren@cignet.higersbergernet>"
   :licence "BSD-style"
-  :depends-on (:stefil :iterate :alexandria :parser-combinator)
+  :depends-on (:stefil :iterate :alexandria :parser-combinator :infix)
   :components ((:file "test-root")
 	       (:file "test-parsers" :depends-on ("test-root"))
 	       (:file "test-arithmetic" :depends-on ("test-root"))))

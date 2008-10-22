@@ -1,4 +1,4 @@
-(defpackage :parser-combinator-tests (:use :cl :stefil :iterate :parser-combinator))
+(defpackage :parser-combinator-tests (:use :cl :stefil :iterate :parser-combinator :alexandria :bpm))
 
 (in-package :parser-combinator-tests)
 
