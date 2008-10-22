@@ -1,30 +1,31 @@
 (in-package :parser-combinator)
 
-(defun char? (character)
+(def-memo1-parser char? character
   (sat (curry #'eql character)))
 
-(defun digit? ()
+(def-cached-parser digit?
   (sat #'digit-char-p))
 
-(defun lower? ()
+(def-cached-parser lower?
   (sat #'lower-case-p))
 
-(defun upper? ()
+(def-cached-parser upper?
   (sat #'upper-case-p))
 
-(defun letter? ()
+(def-cached-parser letter?
   (sat #'alpha-char-p))
 
-(defun alphanum? ()
+(def-cached-parser alphanum?
   (sat #'alphanumericp))
 
-(defun word? ()
+(def-cached-parser word?
   (choice (mdo (<- x (letter?)) (<- xs (word?)) (result (cons x xs)))
 	  (result nil)))
 
-(def-pattern-parser string?
-  (() (result nil))
-  ((_x . _xs) (mdo (char? _x) (string? _xs) (result (cons _x _xs)))))
+(def-memo1-parser string? character-list
+  (match character-list
+    (() (result nil))
+    ((_x . _xs) (mdo (char? _x) (string? _xs) (result (cons _x _xs))))))
 
 (defun many? (parser)
   (choice (mdo (<- x parser) (<- xs (many? parser)) (result (cons x xs))) (result nil)))
@@ -32,7 +33,7 @@
 (defun many1? (parser)
   (mdo (<- x parser) (<- xs (many? parser)) (result (cons x xs))))
 
-(defun int? ()
+(def-cached-parser int?
   (mdo (<- f (choice (mdo (char? #\-) (result #'-)) (result #'identity)))
        (<- n (nat?))
        (result (funcall f n))))
@@ -57,7 +58,7 @@
 	      (result x))))
     (bind p #'rest-chain)))
 
-(defun nat? ()
+(def-cached-parser nat?
   (chainl1? (mdo (<- x (digit?))
 		 (result (digit-char-p x)))
 	    (result
@@ -82,7 +83,3 @@
    (chainr1? p op)
    (result v)))
 
-(defun first? (p);doesn't actually work because there is no laziness, but might free memory at least
-  #'(lambda (inp)
-      (when-let (results (funcall p inp))
-	(list (car results)))))
