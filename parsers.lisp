@@ -13,30 +13,24 @@
   (sat #'upper-case-p))
 
 (defun letter? ()
-  (choice (lower?) (upper?)))
+  (sat #'alpha-char-p))
 
 (defun alphanum? ()
-  (choice (letter?) (digit?)))
+  (sat #'alphanumericp))
 
 (defun word? ()
-  (let ((ne-word (bind (letter?)
-		       #'(lambda (x)
-			   (bind (word?) #'(lambda (xs)
-					     (result (cons x xs))))))))
-    (choice ne-word (result nil))))
+  (choice (mdo (<- x (letter?)) (<- xs (word?)) (result (cons x xs)))
+	  (result nil)))
 
 (def-pattern-parser string?
   (() (result nil))
-  ((_x . _xs) (mdo (char? _x) (pstring? _xs) (result (cons _x _xs)))))
+  ((_x . _xs) (mdo (char? _x) (string? _xs) (result (cons _x _xs)))))
 
 (def-pattern-parser many?
   (_parser (choice (mdo (<- x _parser) (<- xs (many? _parser)) (result (cons x xs))) (result nil))))
 
 (def-pattern-parser many1?
   (_parser (mdo (<- x _parser) (<- xs (many? _parser)) (result (cons x xs)))))
-
-(defun nat? ()
-  (mdo (<- xs (many1? (digit?))) (result (read-from-string (coerce xs 'string)))))
 
 (defun int? ()
   (mdo (<- f (choice (mdo (char? #\-) (result #'-)) (result #'identity)))
@@ -63,18 +57,18 @@
 	      (result x))))
     (bind p #'rest-chain)))
 
-(defun nat2? ()
-  (chainl1 (mdo (<- x (digit?))
-		(result (digit-char-p x)))
-	   (result
-	    #'(lambda (x y)
-		(+ (* 10 x) y)))))
+(defun nat? ()
+  (chainl1? (mdo (<- x (digit?))
+		 (result (digit-char-p x)))
+	    (result
+	     #'(lambda (x y)
+		 (+ (* 10 x) y)))))
 
 (defun chainr1? (p op)
   (bind p #'(lambda (x)
 	      (choice
 	       (mdo (<- f op)
-		    (<- y (chainr1 p op))
+		    (<- y (chainr1? p op))
 		    (result (funcall f x y)))
 	       (result x)))))
 
