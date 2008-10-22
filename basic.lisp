@@ -198,7 +198,7 @@
 (defparameter *memo-table* (make-hash-table))
 
 (defun parse-string (parser string)
-  "Parse a string, return list of possible parse trees. Return remaining suffixes as second value."
+  "Parse a string, return list of possible parse trees. Return remaining suffixes as second value. All returned values may share structure."
   (let ((*memo-table* (make-hash-table))
 	(*curtail-table* (make-hash-table)))
     (let ((results (funcall (force parser) (coerce string 'list))))
