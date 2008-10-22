@@ -29,9 +29,19 @@
   "Define constant parser name. It will we created only once. No parameters."
   (with-unique-names (cache-name)
     `(progn
-       (defparameter ,cache-name ,@body)
+       (defparameter ,cache-name (progn ,@body))
        (defun ,name ()
 	 ,cache-name))))
+
+(defmacro def-memo1-parser (name argument &body body)
+  "Define memoized parser parametrized by one argument, which should be equal under equal."
+  (with-unique-names (cache-table-name cache)
+    `(progn
+       (defparameter ,cache-table-name (make-hash-table #'equal))
+       (defun ,name (,argument)
+	 (let ((,cache (gethash ,argument ,cache-table-name)))
+	   (if ,cache ,cache (setf (gethash ,argument ,cache-table-name)
+				   (progn ,@body))))))))
 
 ;;; primitive parsers
 
