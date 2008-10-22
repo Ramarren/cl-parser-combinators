@@ -5,7 +5,7 @@
   (sat (curry #'eql character)))
 
 (def-cached-parser digit?
-  "Parser: accept digit character, returning an 0-9 integer"
+  "Parser: accept digit character"
   (sat #'digit-char-p))
 
 (def-cached-parser lower?
