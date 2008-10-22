@@ -11,4 +11,23 @@
 	   #:choices
 	   #:choices1
 	   #:mdo
-	   #:parse-string))
+	   #:parse-string
+	   #:char?
+	   #:digit?
+	   #:lower?
+	   #:upper?
+	   #:letter?
+	   #:alphanum?
+	   #:word?
+	   #:string?
+	   #:many?
+	   #:many1?
+	   #:int?
+	   #:sepby1?
+	   #:bracket?
+	   #:sepby?
+	   #:chainl1?
+	   #:nat?
+	   #:chainr1?
+	   #:chainl?
+	   #:chainr?))
