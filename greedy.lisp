@@ -33,12 +33,17 @@
 	      (result x))))
     (bind p #'rest-chain)))
 
-(defun nat2* ()
+(defun nat* ()
   (chainl1* (mdo (<- x (digit?))
 		(result (digit-char-p x)))
 	   (result
 	    #'(lambda (x y)
 		(+ (* 10 x) y)))))
+
+(defun int* ()
+  (mdo (<- f (choice1 (mdo (char? #\-) (result #'-)) (result #'identity)))
+       (<- n (nat*))
+       (result (funcall f n))))
 
 (defun chainr1* (p op)
   (bind p #'(lambda (x)
