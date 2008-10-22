@@ -26,19 +26,19 @@
 	value)))
 
 (defun result (v)
-  #'(lambda ()
-     #'(lambda (inp)
-	 (list (make-instance 'parser-possibility :tree v :suffix inp)))))
+  (delay
+    #'(lambda (inp)
+	(list (make-instance 'parser-possibility :tree v :suffix inp)))))
 
 (defun zero ()
-  #'(lambda ()
-      (constantly nil)))
+  (delay
+    (constantly nil)))
 
 (defun item ()
-  #'(lambda ()
-      #'(lambda (inp)
-	  (when inp
-	    (list (make-instance 'parser-possibility :tree (car inp) :suffix (cdr inp)))))))
+  (delay
+    #'(lambda (inp)
+	(when inp
+	  (list (make-instance 'parser-possibility :tree (car inp) :suffix (cdr inp)))))))
 
 ;;; emulating monads... did I even understand those?
 ;;; bind      :: Parser a -> (a -> Parser b) -> Parser b
@@ -47,14 +47,14 @@
 ;;; (bind p f inp)=(concat list-comprehension)
 
 (defmacro bind (parser-promise parser-promise-generator) ; results in parser-promise
-  `#'(lambda ()
-       (let ((parser-promise ,parser-promise)
-	     (parser-promise-generator ,parser-promise-generator))
-	 #'(lambda (inp)
-	     (iter (for possibility in (funcall (funcall parser-promise) inp))
-		   (for v = (tree-of possibility))
-		   (for inp-prime = (suffix-of possibility))
-		   (nconcing (funcall (funcall (funcall parser-promise-generator v)) inp-prime)))))))
+  `(delay
+     (let ((parser-promise ,parser-promise)
+	   (parser-promise-generator ,parser-promise-generator))
+       #'(lambda (inp)
+	   (iter (for possibility in (funcall (funcall parser-promise) inp))
+		 (for v = (tree-of possibility))
+		 (for inp-prime = (suffix-of possibility))
+		 (nconcing (funcall (force (funcall parser-promise-generator v)) inp-prime)))))))
 
 (defun sat (predicate)
   (bind (item) #'(lambda (x)
@@ -63,24 +63,24 @@
 		       (zero)))))
 
 (defmacro choice (parser1-promise parser2-promise)
-  `#'(lambda ()
-       (let ((parser1-promise ,parser1-promise)
-	     (parser2-promise ,parser2-promise))
+  `(delay
+     (let ((parser1-promise ,parser1-promise)
+	   (parser2-promise ,parser2-promise))
        #'(lambda (inp)
 	   (nconc (funcall (funcall parser1-promise) inp)
 		  (funcall (funcall parser2-promise) inp))))))
 
 (defmacro choice1 (parser1-promise parser2-promise)
-  `#'(lambda ()
-       (let ((parser1-promise ,parser1-promise)
-	     (parser2-promise ,parser2-promise))
-	 #'(lambda (inp)
-	     (let ((results1 (funcall (funcall parser1-promise) inp)))
-	       (if results1
-		   (list (car results1))
-		   (let ((results2 (funcall (funcall parser2-promise) inp)))
-		     (when results2
-		       (list (car results2))))))))))
+  `(delay
+     (let ((parser1-promise ,parser1-promise)
+	   (parser2-promise ,parser2-promise))
+       #'(lambda (inp)
+	   (let ((results1 (funcall (funcall parser1-promise) inp)))
+	     (if results1
+		 (list (car results1))
+		 (let ((results2 (funcall (funcall parser2-promise) inp)))
+		   (when results2
+		     (list (car results2))))))))))
 
 (defmacro choices (&rest parser-promise-list)
   (if (cdr parser-promise-list)
@@ -89,12 +89,12 @@
       (car parser-promise-list)))
 
 (defmacro choices1 (&rest parser-promise-list)
-  `#'(lambda ()
-       (let ((parser-promise-list (list ,@parser-promise-list)))
-	 #'(lambda (inp)
-	     (iter (for p in parser-promise-list)
-		   (for result-list = (funcall (funcall p) inp))
-		   (finding (list (car result-list)) such-that result-list))))))
+  `(delay
+     (let ((parser-promise-list (list ,@parser-promise-list)))
+       #'(lambda (inp)
+	   (iter (for p in parser-promise-list)
+		 (for result-list = (funcall (funcall p) inp))
+		 (finding (list (car result-list)) such-that result-list))))))
 
 ;;; here parser spec is list of (pattern optional-guard comprehension)
 ;;; using do-like notation, <- is special
