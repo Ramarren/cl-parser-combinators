@@ -37,7 +37,7 @@
   "Define memoized parser parametrized by one argument, which should be equal under equal."
   (with-unique-names (cache-table-name cache)
     `(progn
-       (defparameter ,cache-table-name (make-hash-table #'equal))
+       (defparameter ,cache-table-name (make-hash-table :test 'equal))
        (defun ,name (,argument)
 	 (let ((,cache (gethash ,argument ,cache-table-name)))
 	   (if ,cache ,cache (setf (gethash ,argument ,cache-table-name)
