@@ -41,4 +41,6 @@
 	   #:int*
 	   #:chainr1*
 	   #:chainl*
-	   #:chainr*))
+	   #:chainr*
+	   #:memoize?
+	   #:curtail?))
