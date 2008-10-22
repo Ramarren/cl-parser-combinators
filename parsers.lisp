@@ -26,11 +26,11 @@
   (() (result nil))
   ((_x . _xs) (mdo (char? _x) (string? _xs) (result (cons _x _xs)))))
 
-(def-pattern-parser many?
-  (_parser (choice (mdo (<- x _parser) (<- xs (many? _parser)) (result (cons x xs))) (result nil))))
+(defun many? (parser)
+  (choice (mdo (<- x parser) (<- xs (many? parser)) (result (cons x xs))) (result nil)))
 
-(def-pattern-parser many1?
-  (_parser (mdo (<- x _parser) (<- xs (many? _parser)) (result (cons x xs)))))
+(defun many1? (parser)
+  (mdo (<- x parser) (<- xs (many? parser)) (result (cons x xs))))
 
 (defun int? ()
   (mdo (<- f (choice (mdo (char? #\-) (result #'-)) (result #'identity)))
