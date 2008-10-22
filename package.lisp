@@ -2,6 +2,7 @@
     (:use :cl :iterate :alexandria :bpm)
   (:export #:def-cached-parser
 	   #:def-memo1-parser
+	   #:def-memo-parser
 	   #:result
 	   #:zero
 	   #:item

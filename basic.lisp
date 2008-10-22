@@ -44,6 +44,16 @@
 	   (if ,cache ,cache (setf (gethash ,argument ,cache-table-name)
 				   (progn ,@body))))))))
 
+(defmacro def-memo-parser (name argument-list &body body)
+  "Define memoized parser parametrized by one argument, which should be equal under equal."
+  (with-unique-names (cache-table-name cache)
+    `(progn
+       (defparameter ,cache-table-name (make-hash-table :test 'equal))
+       (defun ,name (,@argument-list)
+	 (let ((,cache (gethash (list ,@argument-list) ,cache-table-name)))
+	   (if ,cache ,cache (setf (gethash (list ,@argument-list) ,cache-table-name)
+				   (progn ,@body))))))))
+
 ;;; primitive parsers
 
 (defun result (v)
