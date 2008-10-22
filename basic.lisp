@@ -6,6 +6,25 @@
   ((tree :accessor tree-of :initarg :tree :initform nil)
    (suffix :accessor suffix-of :initarg :suffix :initform nil)))
 
+;;; emulate laziness as well, otherwhise any sort of recursion fails hard
+(defclass promise ()
+  ((thunk :accessor thunk-of :initarg :thunk)
+   (value :accessor value-of :initform nil)))
+
+(defmacro delay (&body body)
+  `(make-instance 'promise
+		  :thunk #'(lambda ()
+			     ,@body)))
+
+(defun force (promise)
+  (with-accessors ((value value-of) (thunk thunk-of)) promise
+    (if thunk
+	(let ((real-value (funcall thunk)))
+	  (setf value real-value
+		thunk nil)
+	  real-value)
+	value)))
+
 (defun result (v)
   #'(lambda ()
      #'(lambda (inp)
@@ -27,7 +46,6 @@
 ;;; p ‘bind‘ f = \inp -> concat [f v inp’ | (v,inp’) <- p inp]
 ;;; (bind p f inp)=(concat list-comprehension)
 
-;;; emulate laziness as well, otherwhise any sort of recursion fails hard
 (defmacro bind (parser-promise parser-promise-generator) ; results in parser-promise
   `#'(lambda ()
        (let ((parser-promise ,parser-promise)
