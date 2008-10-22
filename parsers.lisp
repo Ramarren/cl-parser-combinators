@@ -33,6 +33,27 @@
 (defun many1? (parser)
   (mdo (<- x parser) (<- xs (many? parser)) (result (cons x xs))))
 
+(defun times? (parser count)
+  (if (zerop count)
+      (result nil)
+      (mdo (<- x parser) (<- xs (times? parser (1- count))) (result (cons x xs)))))
+
+(defun atleast? (parser count)
+  (if (zerop count)
+      (many? parser)
+      (mdo (<- x parser) (<- xs (atleast? parser (1- count))) (result (cons x xs)))))
+
+(defun atmost? (parser count)
+  (if (zerop count)
+      (result nil)
+      (choice (mdo (<- x parser) (<- xs (atmost? parser (1- count))) (result (cons x xs))) (result nil))))
+
+(defun between? (parser min max)
+  (assert (>= max min))
+  (if (zerop min)
+      (atmost? parser max)
+      (mdo (<- x parser) (<- xs (between? parser (1- min) (1- max))) (result (cons x xs)))))
+
 (def-cached-parser int?
   (mdo (<- f (choice (mdo (char? #\-) (result #'-)) (result #'identity)))
        (<- n (nat?))

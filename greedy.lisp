@@ -13,6 +13,22 @@
        (<- xs (many* parser))
        (result (cons x xs))))
 
+(defun atleast* (parser count)
+  (if (zerop count)
+      (many* parser)
+      (mdo (<- x parser) (<- xs (atleast? parser (1- count))) (result (cons x xs)))))
+
+(defun atmost* (parser count)
+  (if (zerop count)
+      (result nil)
+      (choice1 (mdo (<- x parser) (<- xs (atmost* parser (1- count))) (result (cons x xs))) (result nil))))
+
+(defun between* (parser min max)
+  (assert (>= max min))
+  (if (zerop min)
+      (atmost* parser max)
+      (mdo (<- x parser) (<- xs (between* parser (1- min) (1- max))) (result (cons x xs)))))
+
 (defun sepby1* (parser-item parser-separator)
   (mdo (<- x parser-item)
        (<- xs (many* (mdo parser-separator
