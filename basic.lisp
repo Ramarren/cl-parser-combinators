@@ -25,16 +25,26 @@
 	  real-value)
 	value)))
 
+(defmacro def-cached-parser (name &body body)
+  "Define constant parser name. It will we created only once. No parameters."
+  (with-unique-names (cache-name)
+    `(progn
+       (defparameter ,cache-name ,@body)
+       (defun ,name ()
+	 ,cache-name))))
+
+;;; primitive parsers
+
 (defun result (v)
   (delay
     #'(lambda (inp)
 	(list (make-instance 'parser-possibility :tree v :suffix inp)))))
 
-(defun zero ()
+(def-cached-parser zero
   (delay
     (constantly nil)))
 
-(defun item ()
+(def-cached-parser item
   (delay
     #'(lambda (inp)
 	(when inp
