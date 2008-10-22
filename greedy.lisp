@@ -33,14 +33,14 @@
 	      (result x))))
     (bind p #'rest-chain)))
 
-(defun nat* ()
+(def-cached-parser nat*
   (chainl1* (mdo (<- x (digit?))
-		(result (digit-char-p x)))
-	   (result
-	    #'(lambda (x y)
-		(+ (* 10 x) y)))))
+		 (result (digit-char-p x)))
+	    (result
+	     #'(lambda (x y)
+		 (+ (* 10 x) y)))))
 
-(defun int* ()
+(def-cached-parser int*
   (mdo (<- f (choice1 (mdo (char? #\-) (result #'-)) (result #'identity)))
        (<- n (nat*))
        (result (funcall f n))))
@@ -49,7 +49,7 @@
   (bind p #'(lambda (x)
 	      (choice1
 	       (mdo (<- f op)
-		    (<- y (chainr1 p op))
+		    (<- y (chainr1* p op))
 		    (result (funcall f x y)))
 	       (result x)))))
 
