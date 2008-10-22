@@ -7,7 +7,7 @@
   (unless (gethash label *memo-table*)
     (setf (gethash label *memo-table*) (make-hash-table)))
   #'(lambda (inp)
-      (let ((memo-table (gethash :label memo-table)))
+      (let ((memo-table (gethash :label *memo-table*)))
 	(multiple-value-bind (result result-p) (gethash inp memo-table)
 	  (if result-p
 	      (copy-list result)
