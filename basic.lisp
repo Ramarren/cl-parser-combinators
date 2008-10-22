@@ -71,22 +71,23 @@
 ;;; simple, no let
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun do-notation (monad-sequence bind)
+  (defun do-notation (monad-sequence bind ignore-gensym)
     (match monad-sequence
       ((_monad . nil)
        _monad)
       (((<- _name _monad) . _)
        `(,bind ,_monad
 	       #'(lambda (,_name)
-		   ,(do-notation (cdr monad-sequence) bind))))
+		   ,(do-notation (cdr monad-sequence) bind ignore-gensym))))
       ((_monad . _)
        `(,bind ,_monad
-	       #'(lambda (_)
-		   (declare (ignore _))
-		   ,(do-notation (cdr monad-sequence) bind)))))))
+	       #'(lambda (,ignore-gensym)
+		   (declare (ignore ,ignore-gensym))
+		   ,(do-notation (cdr monad-sequence) bind ignore-gensym)))))))
 
 (defmacro mdo (&body spec)
-  (do-notation spec 'bind))
+  (with-unique-names (ignore-gensym)
+    (do-notation spec 'bind ignore-gensym)))
 
 (defmacro def-pattern-parser (name &body parser-patterns)
   (with-unique-names (parameter)
