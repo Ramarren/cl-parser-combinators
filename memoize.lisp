@@ -15,6 +15,7 @@
 				   (funcall p inp))))))))))
 
 (defun curtail? (promise label)
+  "Add recursion curtailing to promise."
   (unless (gethash label *curtail-table*)
     (setf (gethash label *curtail-table*) (make-hash-table)))
   (let ((curtail-table (gethash label *curtail-table*)))
