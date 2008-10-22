@@ -82,4 +82,3 @@
   (choice
    (chainr1? p op)
    (result v)))
-
