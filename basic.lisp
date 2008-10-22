@@ -28,44 +28,62 @@
 (defmacro def-cached-parser (name &body body)
   "Define constant parser name. It will we created only once. No parameters."
   (with-unique-names (cache-name)
-    `(progn
-       (defvar ,cache-name);to avoid warning about missing functions with self calling
-       (defun ,name ()
-	 ,cache-name)
-       (setf ,cache-name (progn ,@body)))))
+    (destructuring-bind (docstring body)
+	(if (stringp (car body))
+	    (list (car body) (cdr body))
+	    (list nil body))
+      `(progn
+	 (defvar ,cache-name)		;to avoid warning about missing functions with self calling
+	 (defun ,name ()
+	   ,@(list docstring)
+	   ,cache-name)
+	 (setf ,cache-name (progn ,@body))))))
 
 (defmacro def-memo1-parser (name argument &body body)
   "Define memoized parser parametrized by one argument, which should be equal under equal."
   (with-unique-names (cache-table-name cache)
-    `(progn
-       (defparameter ,cache-table-name (make-hash-table :test 'equal))
-       (defun ,name (,argument)
-	 (let ((,cache (gethash ,argument ,cache-table-name)))
-	   (if ,cache ,cache (setf (gethash ,argument ,cache-table-name)
-				   (progn ,@body))))))))
+    (destructuring-bind (docstring body)
+	(if (stringp (car body))
+	    (list (car body) (cdr body))
+	    (list nil body))
+      `(progn
+	 (defparameter ,cache-table-name (make-hash-table :test 'equal))
+	 (defun ,name (,argument)
+	   ,@(list docstring)
+	   (let ((,cache (gethash ,argument ,cache-table-name)))
+	     (if ,cache ,cache (setf (gethash ,argument ,cache-table-name)
+				     (progn ,@body)))))))))
 
 (defmacro def-memo-parser (name argument-list &body body)
   "Define memoized parser parametrized by one argument, which should be equal under equal."
   (with-unique-names (cache-table-name cache)
-    `(progn
-       (defparameter ,cache-table-name (make-hash-table :test 'equal))
-       (defun ,name (,@argument-list)
-	 (let ((,cache (gethash (list ,@argument-list) ,cache-table-name)))
-	   (if ,cache ,cache (setf (gethash (list ,@argument-list) ,cache-table-name)
-				   (progn ,@body))))))))
+    (destructuring-bind (docstring body)
+	(if (stringp (car body))
+	    (list (car body) (cdr body))
+	    (list nil body))
+      `(progn
+	 (defparameter ,cache-table-name (make-hash-table :test 'equal))
+	 (defun ,name (,@argument-list)
+	   ,@(list docstring)
+	   (let ((,cache (gethash (list ,@argument-list) ,cache-table-name)))
+	     (if ,cache ,cache (setf (gethash (list ,@argument-list) ,cache-table-name)
+				     (progn ,@body)))))))))
 
 ;;; primitive parsers
 
 (defun result (v)
+  "Primitive parser: return v, leaves input unmodified."
   (delay
     #'(lambda (inp)
 	(list (make-instance 'parser-possibility :tree v :suffix inp)))))
 
 (def-cached-parser zero
+  "Primitive parser: parsing failure"
   (delay
     (constantly nil)))
 
 (def-cached-parser item
+  "Primitive parser: consume item from input and return it."
   (delay
     #'(lambda (inp)
 	(when inp
@@ -88,12 +106,14 @@
 		 (nconcing (funcall (force (funcall parser-promise-generator v)) inp-prime)))))))
 
 (defun sat (predicate)
+  "Parser: return a token satisfying a predicate."
   (bind (item) #'(lambda (x)
 		   (if (funcall predicate x)
 		       (result x)
 		       (zero)))))
 
 (defmacro choice (parser1-promise parser2-promise)
+  "Combinator: all alternatives from two parsers"
   `(delay
      (let ((parser1-promise ,parser1-promise)
 	   (parser2-promise ,parser2-promise))
@@ -102,6 +122,7 @@
 		  (funcall (force parser2-promise) inp))))))
 
 (defmacro choice1 (parser1-promise parser2-promise)
+  "Combinator: one alternative from two parsers"
   `(delay
      (let ((parser1-promise ,parser1-promise)
 	   (parser2-promise ,parser2-promise))
@@ -114,12 +135,14 @@
 		     (list (car results2))))))))))
 
 (defmacro choices (&rest parser-promise-list)
+  "Combinator: all alternatives from multiple parsers"
   (if (cdr parser-promise-list)
       `(choice ,(car parser-promise-list)
 	       (choices ,@(cdr parser-promise-list)))
       (car parser-promise-list)))
 
 (defmacro choices1 (&rest parser-promise-list)
+  "Combinator: one alternative from multiple parsers"
   `(delay
      (let ((parser-promise-list (list ,@parser-promise-list)))
        #'(lambda (inp)
@@ -149,6 +172,7 @@
 		   ,(do-notation (cdr monad-sequence) bind ignore-gensym)))))))
 
 (defmacro mdo (&body spec)
+  "Combinator: use do-like notation to sequentially link parsers. (<- name parser) allows capturing return values, last form must be (result form)."
   (with-unique-names (ignore-gensym)
     (do-notation spec 'bind ignore-gensym)))
 
@@ -174,6 +198,9 @@
 (defparameter *memo-table* (make-hash-table))
 
 (defun parse-string (parser string)
+  "Parse a string, return list of possible parse trees. Return remaining suffixes as second value."
   (let ((*memo-table* (make-hash-table))
 	(*curtail-table* (make-hash-table)))
-   (mapcar #'tree-of (funcall (force parser) (coerce string 'list)))))
+    (let ((results (funcall (force parser) (coerce string 'list))))
+     (values (mapcar #'tree-of results)
+	     (mapcar #'suffix-of results)))))
