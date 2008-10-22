@@ -1,12 +1,10 @@
 (in-package :parser-combinator)
 
-(defparameter *memo-table* (make-hash-table))
-
 (defun memoize? (promise label)
   "Create identical, but memoized, parser promise."
   (unless (gethash label *memo-table*)
     (setf (gethash label *memo-table*) (make-hash-table)))
-  (let ((memo-table (gethash :label *memo-table*)))
+  (let ((memo-table (gethash label *memo-table*)))
     #'(lambda ()
 	(let ((p (funcall promise)))
 	  #'(lambda (inp)
@@ -15,8 +13,6 @@
 		    (copy-list result)
 		    (copy-list (setf (gethash inp memo-table)
 				     (funcall p inp))))))))))
-
-(defparameter *curtail-table* (make-hash-table))
 
 (defun curtail? (promise label)
   (unless (gethash label *curtail-table*)
@@ -28,7 +24,6 @@
 		     (multiple-value-bind (counter counter-p) (gethash inp curtail-table)
 		       (cond (counter-p
 			      (destructuring-bind (c . l) counter
-				(print l)
 				(cond ((>= c (1+ l))
 				       nil)
 				      (t

@@ -121,5 +121,10 @@
 (def-pattern-parser psat
   (_predicate (mdo (<- x (item)) (if (funcall _predicate x) (result x) (zero)))))
 
+(defparameter *curtail-table* (make-hash-table))
+(defparameter *memo-table* (make-hash-table))
+
 (defun parse-string (parser string)
-  (mapcar #'tree-of (funcall (funcall parser) (coerce string 'list))))
+  (let ((*memo-table* (make-hash-table))
+	(*curtail-table* (make-hash-table)))
+   (mapcar #'tree-of (funcall (funcall parser) (coerce string 'list)))))
