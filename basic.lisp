@@ -29,9 +29,10 @@
   "Define constant parser name. It will we created only once. No parameters."
   (with-unique-names (cache-name)
     `(progn
-       (defparameter ,cache-name (progn ,@body))
+       (defvar ,cache-name);to avoid warning about missing functions with self calling
        (defun ,name ()
-	 ,cache-name))))
+	 ,cache-name)
+       (setf ,cache-name (progn ,@body)))))
 
 (defmacro def-memo1-parser (name argument &body body)
   "Define memoized parser parametrized by one argument, which should be equal under equal."
