@@ -5,7 +5,7 @@
   (sat (curry #'eql character)))
 
 (def-cached-parser digit?
-  "Parser: accept digit character"
+  "Parser: accept digit character, returning an 0-9 integer"
   (sat #'digit-char-p))
 
 (def-cached-parser lower?
@@ -34,6 +34,8 @@
   (match character-list
     (() (result nil))
     ((_x . _xs) (mdo (char? _x) (string? _xs) (result (cons _x _xs))))))
+
+;;; all repetition parsers return result as list
 
 (defun many? (parser)
   "Parser: accept zero or more repetitions of expression accepted by parser"
