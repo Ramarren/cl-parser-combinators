@@ -2,6 +2,8 @@
 
 ;;; macros for defining parsers
 
+(defparameter *parser-cache* (make-hash-table))
+
 (defmacro def-cached-parser (name &body body)
   "Define constant parser name. It will we created only once. No parameters."
   (with-unique-names (cache-name)
@@ -10,42 +12,44 @@
 	    (list (car body) (cdr body))
 	    (list nil body))
       `(progn
-	 (defvar ,cache-name)		;to avoid warning about missing functions with self calling
+	 (setf (gethash ',name *parser-cache*)
+	       (progn ,@body))
 	 (declaim (inline ,name))
 	 (defun ,name ()
 	   ,@(list docstring)
-	   ,cache-name)
-	 (setf ,cache-name (progn ,@body))))))
+	   (gethash ',name *parser-cache*))))))
 
 (defmacro def-memo1-parser (name argument &body body)
   "Define memoized parser parametrized by one argument, which should be equal under equal."
-  (with-unique-names (cache-table-name cache)
+  (with-unique-names (cache-table cache)
     (destructuring-bind (docstring body)
 	(if (stringp (car body))
 	    (list (car body) (cdr body))
 	    (list nil body))
       `(progn
-	 (defparameter ,cache-table-name (make-hash-table :test 'equal))
+	 (setf (gethash ',name *parser-cache*) (make-hash-table :test 'equal))
 	 (defun ,name (,argument)
 	   ,@(list docstring)
-	   (let ((,cache (gethash ,argument ,cache-table-name)))
-	     (if ,cache ,cache (setf (gethash ,argument ,cache-table-name)
-				     (progn ,@body)))))))))
+	   (let ((,cache-table (gethash ',name *parser-cache*)))
+	     (let ((,cache (gethash ,argument ,cache-table)))
+	       (if ,cache ,cache (setf (gethash ,argument ,cache-table)
+				       (progn ,@body))))))))))
 
 (defmacro def-memo-parser (name argument-list &body body)
   "Define memoized parser parametrized by one argument, which should be equal under equal."
-  (with-unique-names (cache-table-name cache)
+  (with-unique-names (cache-table cache)
     (destructuring-bind (docstring body)
 	(if (stringp (car body))
 	    (list (car body) (cdr body))
 	    (list nil body))
       `(progn
-	 (defparameter ,cache-table-name (make-hash-table :test 'equal))
+	 (setf (gethash ',name *parser-cache*) (make-hash-table :test 'equal))
 	 (defun ,name (,@argument-list)
 	   ,@(list docstring)
-	   (let ((,cache (gethash (list ,@argument-list) ,cache-table-name)))
-	     (if ,cache ,cache (setf (gethash (list ,@argument-list) ,cache-table-name)
-				     (progn ,@body)))))))))
+	   (let ((cache-table (gethash ',name *parser-cache*)))
+	     (let ((,cache (gethash (list ,@argument-list) ,cache-table)))
+	       (if ,cache ,cache (setf (gethash (list ,@argument-list) ,cache-table)
+				       (progn ,@body))))))))))
 
 ;;; primitive parsers
 (declaim (inline result))
