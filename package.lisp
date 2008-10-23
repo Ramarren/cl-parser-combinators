@@ -51,4 +51,7 @@
 	   #:current-result
 	   #:next-result
 	   #:tree-of
-	   #:suffix-of))
+	   #:suffix-of
+	   #:atmost*
+	   #:between*
+	   #:atleast*))
