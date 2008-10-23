@@ -51,6 +51,7 @@
 	   #:between?
 	   #:current-result
 	   #:next-result
+	   #:gather-results
 	   #:tree-of
 	   #:suffix-of
 	   #:atmost*
