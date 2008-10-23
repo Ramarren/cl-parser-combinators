@@ -9,21 +9,20 @@
 
 ;;; lazy results
 (defclass parse-result ()
-  ((top-results :initform nil :initarg :top-results :accessor top-results-of)
-   (promise-list :initform nil :initarg :promise-list :accessor promise-list-of)))
+  ((current-result :initform nil :initarg :top-results :accessor current-result-of)
+   (continuation :initform (constantly nil) :initarg :promise-list :accessor continuation-of)))
+
+(defun current-result (parser-result)
+  (with-accessors ((current-result current-result-of)
+		   (continuation continuation-of)) parse-result
+    (if current-result
+	current-result
+	(setf current-result (funcall continuation)))))
 
 (defun next-result (parse-result)
-  (with-accessors ((top-results top-results-of)
-		   (promise-list promise-list-of)) parse-result
-   (cond ((and (null top-results)
-	       (null promise-list))
-	  nil)
-	 ((and (null top-results)
-	       promise-list)
-	  (setf top-results (force (pop promise-list)))
-	  (next-result parse-result))
-	 (top-results
-	  (pop top-results)))))
+  (with-accessors ((current-result current-result-of)
+		   (continuation continuation-of)) parse-result
+    (setf current-result (funcall continuation))))
 
 (defun gather-results (parse-result)
   (iter (for result next (next-result parse-result))

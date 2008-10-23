@@ -54,8 +54,8 @@
   (delay
     #'(lambda (inp)
 	(make-instance 'parse-result
-		       :top-results (list (make-instance 'parser-possibility
-							 :tree v :suffix inp))))))
+		       :current-result (make-instance 'parser-possibility
+						      :tree v :suffix inp)))))
 
 (def-cached-parser zero
   "Primitive parser: parsing failure"
@@ -68,8 +68,8 @@
     #'(lambda (inp)
 	(if inp
 	    (make-instance 'parse-result
-			   :top-results (list (make-instance 'parser-possibility
-							     :tree (car inp) :suffix (cdr inp))))
+			   :current-result (make-instance 'parser-possibility
+							  :tree (car inp) :suffix (cdr inp)))
 	    (make-instance 'parse-result)))))
 
 (declaim (inline sat))
@@ -83,7 +83,10 @@
 (defun force? (parser)
   "Parser modifier: fully realize result from parser"
   (delay
-   #'(lambda (inp)
-       (let ((result (funcall parser inp)))
-	 (make-instance 'parse-result
-			:top-results (gather-results result))))))
+    #'(lambda (inp)
+	(let ((result (funcall parser inp)))
+	  (let ((all-results (gather-results result)))
+	   (make-instance 'parse-result
+			  :current-result (car all-results)
+			  :continuation #'(lambda ()
+					    (pop all-results))))))))
