@@ -59,7 +59,7 @@
 	(let ((arith-string (make-random-arith-string 100)))
 	  (is (handler-case
 		  (= (eval (infix:string->prefix arith-string))
-		     (eval (collapse-ops (car (parse-string (arith*) arith-string)))))
+		     (eval (collapse-ops (tree-of (current-result (parse-string (arith*) arith-string))))))
 		(division-by-zero ()
 		  (print 'division-by-zero)
 		  t))))))
@@ -68,7 +68,7 @@
   (let ((arith-string (make-random-arith-string size)))
     (print arith-string)
     (is (equal (print (infix:string->prefix arith-string))
-	       (print (collapse-ops (car (parse-string (arith*) arith-string))))))))
+	       (print (collapse-ops (tree-of (current-result (parse-string (arith*) arith-string)))))))))
 
 (defun measure-time (min-size max-size step)
   (iter (for i from min-size to max-size by step)
@@ -76,7 +76,7 @@
 	(for arith-string = (make-random-arith-string i))
 	(sb-ext:gc :full t)
 	(for start-time = (get-internal-real-time))
-	(car (parse-string (arith*) arith-string))
+	(current-result (parse-string (arith*) arith-string))
 	(collect (list i
 		       (/ (- (get-internal-real-time) start-time)
 			  internal-time-units-per-second)))))
