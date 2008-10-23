@@ -59,3 +59,39 @@
 (defparsertest test-atleast? (atleast? (letter?) 3)
   ("abc" (list #\a #\b #\c) "abcd" (list #\a #\b #\c #\d))
   ("" "a" "ab"))
+
+(defparsertest test-atmost? (atmost? (letter?) 3)
+  ("a" (list #\a) "ab" (list #\a #\b) "abc" (list #\a #\b #\c) "abcd" (list #\a #\b #\c) "" nil "1" nil)
+  ())
+
+(defparsertest test-between? (between? (letter?) 2 3)
+  ("ab" (list #\a #\b) "abc" (list #\a #\b #\c) "abcd" (list #\a #\b #\c))
+  ("a" ""))
+
+(defparsertest test-int? (int?)
+  ("5" 5 "12" 12 "145" 145 "-56" -56)
+  ("a" "b" " "))
+
+(defparsertest test-sepby1? (sepby1? (int?) (char? #\,))
+  ("1,2,3" (list 1 2 3) "4,-5,6" (list 4 -5 6) "23" (list 23))
+  ("" "  " "abc"))
+
+(defparsertest test-bracket? (bracket? (char? #\[) (sepby1? (int?) (char? #\,)) (char? #\]))
+  ("[1,2,3]" (list 1 2 3) "[4,-5,6]" (list 4 -5 6) "[23]" (list 23))
+  ("" "  " "abc" "1,2,3" "[4,5,6"))
+
+(defparsertest test-sepby? (sepby? (int?) (char? #\,))
+  ("1,2,3" (list 1 2 3) "4,-5,6" (list 4 -5 6) "23" (list 23) "" nil "abc" nil)
+  ())
+
+(defparsertest test-nat? (nat?)
+  ("1" 1 "23" 23)
+  ("-1"))
+
+(defparsertest test-chainl1? (chainl1? (digit?) (result #'list))
+  ("123" (list (list #\1  #\2) #\3))
+  (""))
+
+(defparsertest test-chainr1? (chainr1? (digit?) (result #'list))
+  ("123" (list #\1 (list #\2 #\3)))
+  (""))
