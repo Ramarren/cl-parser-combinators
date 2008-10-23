@@ -39,9 +39,16 @@
 	 ((and (null top-results)
 	       promise-list)
 	  (setf top-results (force (pop promise-list)))
-	  (pop top-results))
+	  (next-result parse-result))
 	 (top-results
 	  (pop top-results)))))
+
+(defun gather-results (parse-result)
+  (iter (for result next (next-result parse-result))
+	(while result)
+	(collect result)))
+
+;;; macros for defining parsers
 
 (defmacro def-cached-parser (name &body body)
   "Define constant parser name. It will we created only once. No parameters."
@@ -94,19 +101,32 @@
   "Primitive parser: return v, leaves input unmodified."
   (delay
     #'(lambda (inp)
-	(list (make-instance 'parser-possibility :tree v :suffix inp)))))
+	(make-instance 'parse-result
+		       :top-results (list (make-instance 'parser-possibility
+							 :tree v :suffix inp))))))
 
 (def-cached-parser zero
   "Primitive parser: parsing failure"
   (delay
-    (constantly nil)))
+    (constantly (make-instance 'parse-result))))
 
 (def-cached-parser item
   "Primitive parser: consume item from input and return it."
   (delay
     #'(lambda (inp)
-	(when inp
-	  (list (make-instance 'parser-possibility :tree (car inp) :suffix (cdr inp)))))))
+	(if inp
+	    (make-instance 'parse-result
+			   :top-results (list (make-instance 'parser-possibility
+							     :tree (car inp) :suffix (cdr inp))))
+	    (make-instance 'parse-result)))))
+
+(defun force? (parser)
+  "Parser modifier: fully realize result from parser"
+  (delay
+   #'(lambda (inp)
+       (let ((result (funcall parser inp)))
+	 (make-instance 'parse-result
+			:top-results (gather-results result))))))
 
 ;;; emulating monads... did I even understand those?
 ;;; bind      :: Parser a -> (a -> Parser b) -> Parser b
@@ -115,17 +135,27 @@
 ;;; (bind p f inp)=(concat list-comprehension)
 
 (defun execute-bind (inp parser parser-promise-generator)
-  (iter (for possibility in (funcall parser inp))
-	(for v = (tree-of possibility))
-	(for inp-prime = (suffix-of possibility))
-	(nconcing (funcall (force (funcall parser-promise-generator v)) inp-prime))))
+  (let ((results-p (funcall parser inp)))
+    (assert results-p)
+    (iter (for result-p next (next-result results-p))
+	  (while result-p)
+	  (for v = (tree-of result-p))
+	  (for inp-prime = (suffix-of result-p))
+	  (for results-q = (funcall (force (funcall parser-promise-generator v)) inp-prime))
+	  (nconcing (gather-results results-q)))))
 
 (defmacro bind (parser-promise parser-promise-generator) ; results in parser-promise
   `(delay
      (let ((parser-promise ,parser-promise)
 	   (parser-promise-generator ,parser-promise-generator))
        #'(lambda (inp)
-	   (execute-bind inp (force parser-promise) parser-promise-generator)))))
+	   (make-instance 'parse-result
+			  :promise-list
+			  (list
+			   (delay
+			     (execute-bind inp
+					   (force parser-promise)
+					   parser-promise-generator))))))))
 
 (declaim (inline sat))
 (defun sat (predicate)
@@ -141,8 +171,10 @@
      (let ((parser1-promise ,parser1-promise)
 	   (parser2-promise ,parser2-promise))
        #'(lambda (inp)
-	   (nconc (funcall (force parser1-promise) inp)
-		  (funcall (force parser2-promise) inp))))))
+	   (make-instance 'parse-result
+			  :promise-list
+			  (list (delay (gather-results (funcall (force parser1-promise) inp)))
+				(delay (gather-results (funcall (force parser2-promise) inp)))))))))
 
 (defmacro choice1 (parser1-promise parser2-promise)
   "Combinator: one alternative from two parsers"
@@ -150,12 +182,15 @@
      (let ((parser1-promise ,parser1-promise)
 	   (parser2-promise ,parser2-promise))
        #'(lambda (inp)
-	   (let ((results1 (funcall (force parser1-promise) inp)))
-	     (if results1
-		 (list (car results1))
-		 (let ((results2 (funcall (force parser2-promise) inp)))
-		   (when results2
-		     (list (car results2))))))))))
+	   (make-instance 'parse-result
+			  :promise-list
+			  (list (delay
+				  (let ((result1 (next-result (funcall (force parser1-promise) inp))))
+				    (if result1
+					(make-instance 'parse-result :top-results (list result1))
+					(let ((result2 (next-result (funcall (force parser2-promise) inp))))
+					  (when result2
+					    (list (make-instance 'parse-result :top-results (list result2))))))))))))))
 
 (defmacro choices (&rest parser-promise-list)
   "Combinator: all alternatives from multiple parsers"
@@ -169,9 +204,14 @@
   `(delay
      (let ((parser-promise-list (list ,@parser-promise-list)))
        #'(lambda (inp)
-	   (iter (for p in parser-promise-list)
-		 (for result-list = (funcall (force p) inp))
-		 (finding (list (car result-list)) such-that result-list))))))
+	   (make-instance 'parse-result
+			  :promise-list
+			  (list (delay
+				  (iter (for p in parser-promise-list)
+					(for result = (next-result (funcall (force p) inp)))
+					(finding (make-instance 'parse-result
+								:top-results (list (car result-list)))
+						 such-that result)))))))))
 
 ;;; here parser spec is list of (pattern optional-guard comprehension)
 ;;; using do-like notation, <- is special
@@ -224,6 +264,4 @@
   "Parse a string, return list of possible parse trees. Return remaining suffixes as second value. All returned values may share structure."
   (let ((*memo-table* (make-hash-table))
 	(*curtail-table* (make-hash-table)))
-    (let ((results (funcall (force parser) (coerce string 'list))))
-     (values (mapcar #'tree-of results)
-	     (mapcar #'suffix-of results)))))
+    (funcall (force parser) (coerce string 'list))))
