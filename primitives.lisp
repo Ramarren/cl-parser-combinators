@@ -57,9 +57,14 @@
   "Primitive parser: return v, leaves input unmodified."
   (delay
     #'(lambda (inp)
-	(make-instance 'parse-result
-		       :current-result (make-instance 'parser-possibility
-						      :tree v :suffix inp)))))
+	(let ((closure-value (make-instance 'parser-possibility
+					    :tree v :suffix inp)))
+	  (make-instance 'parse-result
+			 :continuation #'(lambda ()
+					   (when closure-value
+					     (prog1
+						 closure-value
+					       (setf closure-value nil)))))))))
 
 (def-cached-parser zero
   "Primitive parser: parsing failure"
@@ -70,11 +75,16 @@
   "Primitive parser: consume item from input and return it."
   (delay
     #'(lambda (inp)
-	(if inp
-	    (make-instance 'parse-result
-			   :current-result (make-instance 'parser-possibility
-							  :tree (car inp) :suffix (cdr inp)))
-	    (make-instance 'parse-result)))))
+	(let ((closure-value (make-instance 'parser-possibility
+					    :tree (car inp) :suffix (cdr inp))))
+	  (if inp
+	      (make-instance 'parse-result
+			     :continuation #'(lambda ()
+					       (when closure-value
+						 (prog1
+						     closure-value
+						   (setf closure-value nil)))))
+	      (make-instance 'parse-result))))))
 
 (declaim (inline sat))
 (defun sat (predicate)

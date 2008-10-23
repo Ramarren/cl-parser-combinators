@@ -9,10 +9,10 @@
 
 ;;; lazy results
 (defclass parse-result ()
-  ((current-result :initform nil :initarg :top-results :accessor current-result-of)
-   (continuation :initform (constantly nil) :initarg :promise-list :accessor continuation-of)))
+  ((current-result :initform nil :initarg :current-result :accessor current-result-of)
+   (continuation :initform (constantly nil) :initarg :continuation :accessor continuation-of)))
 
-(defun current-result (parser-result)
+(defun current-result (parse-result)
   (with-accessors ((current-result current-result-of)
 		   (continuation continuation-of)) parse-result
     (if current-result
@@ -25,9 +25,13 @@
     (setf current-result (funcall continuation))))
 
 (defun gather-results (parse-result)
-  (iter (for result next (next-result parse-result))
-	(while result)
-	(collect result)))
+  (let ((current-result (current-result parse-result))
+	(continuation-results
+	 (iter (for result next (next-result parse-result))
+	       (while result)
+	       (collect result))))
+    (when current-result
+      (cons current-result continuation-results))))
 
 
 ;;; here parser spec is list of (pattern optional-guard comprehension)
