@@ -2,7 +2,7 @@
 
 ;;; macros for defining parsers
 
-(defparameter *parser-cache* (make-hash-table))
+(defvar *parser-cache* (make-hash-table))
 
 (defmacro def-cached-parser (name &body body)
   "Define constant parser name. It will we created only once. No parameters."
@@ -94,13 +94,13 @@
 		       (result x)
 		       (zero)))))
 
-(defun force? (parser)
+(defun force? (parser-promise)
   "Parser modifier: fully realize result from parser"
   (delay
-    #'(lambda (inp)
-	(let ((result (funcall parser inp)))
-	  (let ((all-results (gather-results result)))
-	   (make-instance 'parse-result
-			  :current-result (car all-results)
-			  :continuation #'(lambda ()
-					    (pop all-results))))))))
+    (let ((parser (force parser-promise)))
+      #'(lambda (inp)
+	  (let ((result (funcall parser inp)))
+	    (let ((all-results (gather-results result)))
+	      (make-instance 'parse-result
+			     :continuation #'(lambda ()
+					       (pop all-results)))))))))
