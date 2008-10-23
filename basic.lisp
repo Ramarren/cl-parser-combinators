@@ -165,16 +165,26 @@
 		       (result x)
 		       (zero)))))
 
+(defun execute-choice (inp parser1 parser2)
+  (let ((result1 (funcall parser1 inp))
+	(result2 (funcall parser2 inp)))
+    (let ((top1 (top-results-of result1))
+	  (top2 (top-results-of result2))
+	  (promise1 (promise-list-of result1))
+	  (promise2 (promise-list-of result2)))
+      (let ((promise-top1 (list (delay top1)))
+	    (promise-top2 (list (delay top2))))
+	(make-instance 'parse-result
+		       :promise-list
+		       (append promise-top1 promise1 promise-top2 promise2))))))
+
 (defmacro choice (parser1-promise parser2-promise)
   "Combinator: all alternatives from two parsers"
   `(delay
      (let ((parser1-promise ,parser1-promise)
 	   (parser2-promise ,parser2-promise))
        #'(lambda (inp)
-	   (make-instance 'parse-result
-			  :promise-list
-			  (list (delay (gather-results (funcall (force parser1-promise) inp)))
-				(delay (gather-results (funcall (force parser2-promise) inp)))))))))
+	   (execute-choice inp (force parser1-promise) (force parser2-promise))))))
 
 (defmacro choice1 (parser1-promise parser2-promise)
   "Combinator: one alternative from two parsers"
