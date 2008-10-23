@@ -69,3 +69,14 @@
     (print arith-string)
     (is (equal (print (infix:string->prefix arith-string))
 	       (print (collapse-ops (car (parse-string (arith*) arith-string))))))))
+
+(defun measure-time (min-size max-size step)
+  (iter (for i from min-size to max-size by step)
+	(print i)
+	(for arith-string = (make-random-arith-string i))
+	(sb-ext:gc :full t)
+	(for start-time = (get-internal-real-time))
+	(car (parse-string (arith*) arith-string))
+	(collect (list i
+		       (/ (- (get-internal-real-time) start-time)
+			  internal-time-units-per-second)))))
