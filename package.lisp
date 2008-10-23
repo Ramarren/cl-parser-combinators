@@ -47,4 +47,6 @@
 	   #:times?
 	   #:atleast?
 	   #:atmost?
-	   #:between?))
+	   #:between?
+	   #:current-result
+	   #:next-result))
