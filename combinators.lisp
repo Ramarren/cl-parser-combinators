@@ -69,19 +69,21 @@
   "Combinator: one alternative from two parsers"
   `(delay
      (let ((parser1-promise ,parser1-promise)
-	   (parser2-promise ,parser2-promise)
-	   (is-unread t))
+	   (parser2-promise ,parser2-promise))
        #'(lambda (inp)
-	   (make-instance 'parse-result
-			  :continuation
-			  #'(lambda ()
-			      (when is-unread
-				(setf is-unread nil)
-				(let ((result (funcall (execute-choice inp
-								       (force parser1-promise)
-								       (force parser2-promise)))))
-				  (setf parser1-promise nil parser2-promise nil)
-				  result))))))))
+	   (let ((parser1-promise parser1-promise)
+		 (parser2-promise parser2-promise)
+		 (is-unread t))
+	     (make-instance 'parse-result
+			    :continuation
+			    #'(lambda ()
+				(when is-unread
+				  (setf is-unread nil)
+				  (let ((result (funcall (execute-choice inp
+									 (force parser1-promise)
+									 (force parser2-promise)))))
+				    (setf parser1-promise nil parser2-promise nil)
+				    result)))))))))
 
 (defmacro choices (&rest parser-promise-list)
   "Combinator: all alternatives from multiple parsers"
@@ -93,17 +95,18 @@
 (defmacro choices1 (&rest parser-promise-list)
   "Combinator: one alternative from multiple parsers"
   `(delay
-     (let ((parser-promise-list (list ,@parser-promise-list))
-	   (is-unread t))
+     (let ((parser-promise-list (list ,@parser-promise-list)))
        #'(lambda (inp)
-	   (make-instance 'parse-result
-			  :continuation
-			  #'(lambda ()
-			      (when is-unread
-				(setf is-unread t)
-				(iter (for p in parser-promise-list)
-				      (for result = (next-result (funcall (force p) inp)))
-				      (finding (make-instance 'parse-result
-							      :top-results (list (car result-list)))
-					       such-that result)
-				      (finally (setf parser-promise-list nil))))))))))
+	   (let ((parser-promise-list parser-promise-list)
+		 (is-unread t))
+	     (make-instance 'parse-result
+			    :continuation
+			    #'(lambda ()
+				(when is-unread
+				  (setf is-unread t)
+				  (iter (for p in parser-promise-list)
+					(for result = (next-result (funcall (force p) inp)))
+					(finding (make-instance 'parse-result
+								:top-results (list (car result-list)))
+						 such-that result)
+					(finally (setf parser-promise-list nil)))))))))))
