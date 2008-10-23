@@ -26,7 +26,7 @@
 
 (deftest test-arith1 ()
   (is (equal '(+ 1 (* 2 3))
-	     (car (parse-string (arith*) "1+2*3")))))
+	     (tree-of (current-result (parse-string (arith*) "1+2*3"))))))
 
 (defun make-random-arith-string (size)
   (coerce (cons (digit-char (1+ (random 9)))
