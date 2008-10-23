@@ -25,6 +25,24 @@
 	  real-value)
 	value)))
 
+;;; lazy results
+(defclass parse-result ()
+  ((top-results :initform nil :initarg :top-results :accessor top-results-of)
+   (promise-list :initform nil :initarg :promise-list :accessor promise-list-of)))
+
+(defun next-result (parse-result)
+  (with-accessors ((top-results top-results-of)
+		   (promise-list promise-list-of)) parse-result
+   (cond ((and (null top-results)
+	       (null promise-list))
+	  nil)
+	 ((and (null top-results)
+	       promise-list)
+	  (setf top-results (force (pop promise-list)))
+	  (pop top-results))
+	 (top-results
+	  (pop top-results)))))
+
 (defmacro def-cached-parser (name &body body)
   "Define constant parser name. It will we created only once. No parameters."
   (with-unique-names (cache-name)
