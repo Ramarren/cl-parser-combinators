@@ -49,4 +49,6 @@
 	   #:atmost?
 	   #:between?
 	   #:current-result
-	   #:next-result))
+	   #:next-result
+	   #:tree-of
+	   #:suffix-of))
