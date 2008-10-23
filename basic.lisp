@@ -34,6 +34,7 @@
 	    (list nil body))
       `(progn
 	 (defvar ,cache-name)		;to avoid warning about missing functions with self calling
+	 (declaim (inline ,name))
 	 (defun ,name ()
 	   ,@(list docstring)
 	   ,cache-name)
@@ -70,7 +71,7 @@
 				     (progn ,@body)))))))))
 
 ;;; primitive parsers
-
+(declaim (inline result))
 (defun result (v)
   "Primitive parser: return v, leaves input unmodified."
   (delay
@@ -95,16 +96,20 @@
 ;;; p ‘bind‘ f = \inp -> concat [f v inp’ | (v,inp’) <- p inp]
 ;;; (bind p f inp)=(concat list-comprehension)
 
+(defun execute-bind (inp parser parser-promise-generator)
+  (iter (for possibility in (funcall parser inp))
+	(for v = (tree-of possibility))
+	(for inp-prime = (suffix-of possibility))
+	(nconcing (funcall (force (funcall parser-promise-generator v)) inp-prime))))
+
 (defmacro bind (parser-promise parser-promise-generator) ; results in parser-promise
   `(delay
      (let ((parser-promise ,parser-promise)
 	   (parser-promise-generator ,parser-promise-generator))
        #'(lambda (inp)
-	   (iter (for possibility in (funcall (force parser-promise) inp))
-		 (for v = (tree-of possibility))
-		 (for inp-prime = (suffix-of possibility))
-		 (nconcing (funcall (force (funcall parser-promise-generator v)) inp-prime)))))))
+	   (execute-bind inp (force parser-promise) parser-promise-generator)))))
 
+(declaim (inline sat))
 (defun sat (predicate)
   "Parser: return a token satisfying a predicate."
   (bind (item) #'(lambda (x)
