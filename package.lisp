@@ -44,6 +44,7 @@
 	   #:chainr*
 	   #:memoize?
 	   #:curtail?
+	   #:force?
 	   #:times?
 	   #:atleast?
 	   #:atmost?
