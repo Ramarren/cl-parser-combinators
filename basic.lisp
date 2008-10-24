@@ -56,7 +56,7 @@
 		   ,(do-notation (cdr monad-sequence) bind ignore-gensym)))))))
 
 (defmacro mdo (&body spec)
-  "Combinator: use do-like notation to sequentially link parsers. (<- name parser) allows capturing return values, last form must be (result form)."
+  "Combinator: use do-like notation to sequentially link parsers. (<- name parser) allows capturing of return values."
   (with-unique-names (ignore-gensym)
     (do-notation spec 'bind ignore-gensym)))
 
