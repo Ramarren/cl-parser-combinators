@@ -134,10 +134,11 @@
 	    (define-oneshot-result inp is-unread
 	      (let ((final-result
 		     (iter (for f-result next (current-result (funcall op p-inp)))
+			   (while f-result)
 			   (for f-inp next (suffix-of f-result))
+			   (while p-result)
 			   (for p-result next (current-result (funcall p f-inp)))
 			   (for p-inp initially inp then (suffix-of p-result))
-			   (while (and f-result p-result))
 			   (for f = (tree-of f-result))
 			   (for y = (tree-of p-result))
 			   (collect f into function-list)
