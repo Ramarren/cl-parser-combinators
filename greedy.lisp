@@ -2,25 +2,29 @@
 
 ;;; greedy version of repetition combinators
 
+(defmacro define-oneshot-result (inp is-unread &body body)
+  `(function (lambda (,inp)
+     (let ((,is-unread t))
+       (make-instance 'parse-result
+		      :continuation
+		      #'(lambda ()
+			  (when ,is-unread
+			    (setf ,is-unread nil)
+			    ,@body)))))))
+
 (defun many* (parser)
   "Parser: collect as many of first result of parser as possible"
   (delay
     (let ((parser (force parser)))
-      #'(lambda (inp)
-	  (let ((is-unread t))
-	    (make-instance 'parse-result
-			   :continuation
-			   #'(lambda ()
-			       (when is-unread
-				 (setf is-unread nil)
-				 (let ((final-result (iter (for result next (current-result (funcall parser inp-prime)))
-							   (while result)
-							   (for inp-prime initially inp then (suffix-of result))
-							   (collect (tree-of result) into tree)
-							   (finally (return (list tree inp-prime))))))
-				   (make-instance 'parser-possibility
-						  :tree (car final-result)
-						  :suffix (cadr final-result)))))))))))
+      (define-oneshot-result inp is-unread
+	(let ((final-result (iter (for result next (current-result (funcall parser inp-prime)))
+				  (while result)
+				  (for inp-prime initially inp then (suffix-of result))
+				  (collect (tree-of result) into tree)
+				  (finally (return (list tree inp-prime))))))
+	  (make-instance 'parser-possibility
+			 :tree (car final-result)
+			 :suffix (cadr final-result)))))))
 
 
 (defun many1* (parser)
@@ -33,20 +37,39 @@
   "Parser: accept as many as possible and at least count of parser"
   (if (zerop count)
       (many* parser)
-      (mdo (<- x parser) (<- xs (atleast? parser (1- count))) (result (cons x xs)))))
+      (delay
+	(define-oneshot-result inp is-unread
+	  (let ((grab-result (current-result (funcall (force (many* parser)) inp))))
+	    (when (>= (length (tree-of grab-result)) count)
+	      grab-result))))))
+
 
 (defun atmost* (parser count)
   "Parser: accept as many as possible but at most count of parser"
-  (if (zerop count)
-      (result nil)
-      (choice1 (mdo (<- x parser) (<- xs (atmost* parser (1- count))) (result (cons x xs))) (result nil))))
+  (delay
+    (let ((parser (force parser)))
+      (define-oneshot-result inp is-unread
+	(let ((final-result (iter (for result next (current-result (funcall parser inp-prime)))
+				  (for i from 0)
+				  (while (and result (< i count)))
+				  (for inp-prime initially inp then (suffix-of result))
+				  (collect (tree-of result) into tree)
+				  (finally (return (list tree inp-prime))))))
+	  (make-instance 'parser-possibility
+			 :tree (car final-result)
+			 :suffix (cadr final-result)))))))
 
 (defun between* (parser min max)
   "Parser: accept as many as possible but between min and max of parser"
   (assert (>= max min))
   (if (zerop min)
       (atmost* parser max)
-      (mdo (<- x parser) (<- xs (between* parser (1- min) (1- max))) (result (cons x xs)))))
+      (delay
+	(define-oneshot-result inp is-unread
+	  (let ((grab-result (current-result (funcall (force (atmost* parser max)) inp))))
+	    (when (>= (length (tree-of grab-result)) min)
+	      grab-result))))))
+
 
 (defun sepby1* (parser-item parser-separator)
   "Parser: accept as many as possible of parser-item separated by parser-separator, but at least one."
