@@ -10,10 +10,10 @@
 (defmacro defparsertest (test-name parser (&rest should-pairs) (&rest fails))
   `(deftest ,test-name ()
      ,@(iter (for (string should) on should-pairs by #'cddr)
-	     (collect `(is (equal ,should
-				  (tree-of (current-result (parse-string ,parser ,string)))))))
+             (collect `(is (equal ,should
+                                  (tree-of (current-result (parse-string ,parser ,string)))))))
      ,@(iter (for string in fails)
-	     (collect `(is (null (current-result (parse-string ,parser ,string))))))))
+             (collect `(is (null (current-result (parse-string ,parser ,string))))))))
 
 (defparsertest test-char? (char? #\a)
   ("a" #\a)

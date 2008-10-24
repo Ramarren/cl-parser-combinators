@@ -27,7 +27,7 @@
 (def-cached-parser word?
   "Parser: accept a string of alphabetic characters"
   (choice (mdo (<- x (letter?)) (<- xs (word?)) (result (cons x xs)))
-	  (result nil)))
+          (result nil)))
 
 (def-memo1-parser string? character-list
   "Parser: accept a specific list of tokens"
@@ -58,13 +58,13 @@
       (mdo (<- x parser) (<- xs (atleast? parser (1- count))) (result (cons x xs)))))
 
 (defun atmost? (parser count)
-  "Parser: accept at most count expressions accepted by parser"  
+  "Parser: accept at most count expressions accepted by parser"
   (if (zerop count)
       (result nil)
       (choice (mdo (<- x parser) (<- xs (atmost? parser (1- count))) (result (cons x xs))) (result nil))))
 
 (defun between? (parser min max)
-  "Parser: accept between min and max expressions accepted by parser"  
+  "Parser: accept between min and max expressions accepted by parser"
   (assert (>= max min))
   (if (zerop min)
       (atmost? parser max)
@@ -93,29 +93,29 @@
 (defun chainl1? (p op)
   "Parser: accept one or more p reduced by result of op with left associativity"
   (labels ((rest-chain (x)
-	     (choice
-	      (mdo (<- f op)
-		   (<- y p)
-		   (rest-chain (funcall f x y)))
-	      (result x))))
+             (choice
+              (mdo (<- f op)
+                   (<- y p)
+                   (rest-chain (funcall f x y)))
+              (result x))))
     (bind p #'rest-chain)))
 
 (def-cached-parser nat?
   "Parser: accept natural numbers"
   (chainl1? (mdo (<- x (digit?))
-		 (result (digit-char-p x)))
-	    (result
-	     #'(lambda (x y)
-		 (+ (* 10 x) y)))))
+                 (result (digit-char-p x)))
+            (result
+             #'(lambda (x y)
+                 (+ (* 10 x) y)))))
 
 (defun chainr1? (p op)
   "Parser: accept one or more p reduced by result of op with right associativity"
   (bind p #'(lambda (x)
-	      (choice
-	       (mdo (<- f op)
-		    (<- y (chainr1? p op))
-		    (result (funcall f x y)))
-	       (result x)))))
+              (choice
+               (mdo (<- f op)
+                    (<- y (chainr1? p op))
+                    (result (funcall f x y)))
+               (result x)))))
 
 (defun chainl? (p op v)
   "Parser: like chainl1?, but will return v if no p can be parsed"

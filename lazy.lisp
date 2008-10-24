@@ -7,14 +7,14 @@
 
 (defmacro delay (&body body)
   `(make-instance 'promise
-		  :thunk #'(lambda ()
-			     ,@body)))
+                  :thunk #'(lambda ()
+                             ,@body)))
 
 (defun force (promise)
   (with-accessors ((value value-of) (thunk thunk-of)) promise
     (if thunk
-	(let ((real-value (funcall thunk)))
-	  (setf value real-value
-		thunk nil)
-	  real-value)
-	value)))
+        (let ((real-value (funcall thunk)))
+          (setf value real-value
+                thunk nil)
+          real-value)
+        value)))
