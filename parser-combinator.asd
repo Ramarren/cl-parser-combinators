@@ -1,8 +1,8 @@
 (asdf:defsystem parser-combinator
   :version "0"
   :description "Toy implementation of parser combinators"
-  :maintainer " <ramarren@cignet.higersbergernet>"
-  :author " <ramarren@cignet.higersbergernet>"
+  :maintainer "Jakub Higersberger <ramarren@gmail.com>"
+  :author "Jakub Higersberger <ramarren@gmail.com>"
   :licence "BSD-style"
   :depends-on (:iterate :alexandria :bpm)
   :components ((:file "package")
