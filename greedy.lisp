@@ -1,4 +1,4 @@
-(in-package :parser-combinator)
+(in-package :parser-combinators)
 
 ;;; greedy version of repetition combinators
 

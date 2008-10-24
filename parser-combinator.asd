@@ -1,4 +1,4 @@
-(asdf:defsystem parser-combinator
+(asdf:defsystem parser-combinators
   :version "0"
   :description "Toy implementation of parser combinators"
   :maintainer "Jakub Higersberger <ramarren@gmail.com>"

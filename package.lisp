@@ -1,4 +1,4 @@
-(defpackage :parser-combinator
+(defpackage :parser-combinators
     (:use :cl :iterate :alexandria :bpm)
   (:export #:def-cached-parser
            #:def-memo1-parser

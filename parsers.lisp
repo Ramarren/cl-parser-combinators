@@ -1,4 +1,4 @@
-(in-package :parser-combinator)
+(in-package :parser-combinators)
 
 (def-memo1-parser char? character
   "Parser: accept token eql to argument"

@@ -1,4 +1,4 @@
-(in-package :parser-combinator)
+(in-package :parser-combinators)
 
 (defun memoize? (promise label)
   "Create identical, but memoized, parser promise."

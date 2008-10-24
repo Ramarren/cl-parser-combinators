@@ -1,4 +1,4 @@
-(in-package :parser-combinator)
+(in-package :parser-combinators)
 
 ;;; macros for defining parsers
 

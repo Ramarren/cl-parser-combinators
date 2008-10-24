@@ -1,4 +1,4 @@
-(in-package :parser-combinator)
+(in-package :parser-combinators)
 
 ;;; emulating monads... did I even understand those?
 ;;; bind      :: Parser a -> (a -> Parser b) -> Parser b

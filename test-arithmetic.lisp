@@ -1,6 +1,6 @@
-(in-package :parser-combinator-tests)
+(in-package :parser-combinators-tests)
 
-(in-suite parser-combinator-tests)
+(in-suite parser-combinators-tests)
 
 (defsuite* arithmetic-test)
 

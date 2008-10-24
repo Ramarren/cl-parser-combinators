@@ -1,4 +1,4 @@
-(in-package :parser-combinator)
+(in-package :parser-combinators)
 
 ;;; emulate laziness as well, otherwhise any sort of recursion fails hard
 (defclass promise ()

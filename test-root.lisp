@@ -1,7 +1,7 @@
-(defpackage :parser-combinator-tests (:use :cl :stefil :iterate :parser-combinator :alexandria :bpm))
+(defpackage :parser-combinators-tests (:use :cl :stefil :iterate :parser-combinators :alexandria :bpm))
 
-(in-package :parser-combinator-tests)
+(in-package :parser-combinators-tests)
 
 (in-root-suite)
 
-(defsuite parser-combinator-tests)
+(defsuite parser-combinators-tests)
