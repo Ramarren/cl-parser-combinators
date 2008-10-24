@@ -3,11 +3,25 @@
 ;;; greedy version of repetition combinators
 
 (defun many* (parser)
-  "Parser: accept as many as possible of parser"
-  (choice1 (mdo (<- x parser)
-		(<- xs (many* parser))
-		(result (cons x xs)))
-	   (result nil)))
+  "Parser: collect as many of first result of parser as possible"
+  (delay
+    (let ((parser (force parser)))
+      #'(lambda (inp)
+	  (let ((is-unread t))
+	    (make-instance 'parse-result
+			   :continuation
+			   #'(lambda ()
+			       (when is-unread
+				 (setf is-unread nil)
+				 (let ((final-result (iter (for result next (current-result (funcall parser inp-prime)))
+							   (while result)
+							   (for inp-prime initially inp then (suffix-of result))
+							   (collect (tree-of result) into tree)
+							   (finally (return (list tree inp-prime))))))
+				   (make-instance 'parser-possibility
+						  :tree (car final-result)
+						  :suffix (cadr final-result)))))))))))
+
 
 (defun many1* (parser)
   "Parser: accept as many as possible, and at least one, of parser"
