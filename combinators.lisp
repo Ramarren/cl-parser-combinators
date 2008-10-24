@@ -12,6 +12,9 @@
     #'(lambda ()
 	(let ((result nil))
 	  (iter (when q-parse-result (setf result (next-result q-parse-result)))
+		(until (or result
+			   (and (null p-parse-result)
+				(null q-parse-result))))
 		(unless result
 		  (setf q-parse-result
 			(let ((p-next-result
@@ -20,10 +23,7 @@
 			      (let ((v (tree-of p-next-result))
 				    (inp-prime (suffix-of p-next-result)))
 				(funcall (force (funcall parser-promise-generator v)) inp-prime))
-			      (setf p-parse-result nil)))))
-		(until (or result
-			   (and (null p-parse-result)
-				(null q-parse-result)))))
+			      (setf p-parse-result nil))))))
 	  result))))
 
 (defmacro bind (parser-promise parser-promise-generator) ; results in parser-promise
