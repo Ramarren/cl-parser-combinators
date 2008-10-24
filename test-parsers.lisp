@@ -7,65 +7,136 @@
 ;;; test for predefined parsers
 ;;; at least some of them, this is boring, write automatic genetor
 
-(deftest test-char? ()
-  (is (eql #\a (car (parse-string (char? #\a) "a"))))
-  (is (null (parse-string (char? #\a) "b"))))
+(defmacro defparsertest (test-name parser (&rest should-pairs) (&rest fails))
+  `(deftest ,test-name ()
+     ,@(iter (for (string should) on should-pairs by #'cddr)
+	     (collect `(is (equal ,should
+				  (tree-of (current-result (parse-string ,parser ,string)))))))
+     ,@(iter (for string in fails)
+	     (collect `(is (null (current-result (parse-string ,parser ,string))))))))
 
-(deftest test-digit? ()
-  (is (eql #\5 (car (parse-string (digit?) "5"))))
-  (is (null (parse-string (digit?) "b"))))
+(defparsertest test-char? (char? #\a)
+  ("a" #\a)
+  ("b"))
 
-(deftest test-lower? ()
-  (is (eql #\a (car (parse-string (lower?) "a"))))
-  (is (null (parse-string (lower?) "A"))))
+(defparsertest test-digit? (digit?)
+  ("5" #\5)
+  ("b"))
 
-(deftest test-upper? ()
-  (is (eql #\A (car (parse-string (upper?) "A"))))
-  (is (null (parse-string (upper?) "a"))))
+(defparsertest test-lower? (lower?)
+  ("a" #\a)
+  ("A" "5"))
 
-(deftest test-alphanum? ()
-  (is (eql #\A (car (parse-string (alphanum?) "A"))))
-  (is (eql #\a (car (parse-string (alphanum?) "a"))))
-  (is (eql #\1 (car (parse-string (alphanum?) "1"))))
-  (is (eql #\5 (car (parse-string (alphanum?) "5"))))
-  (is (null (parse-string (alphanum?) ","))))
+(defparsertest test-upper? (upper?)
+  ("A" #\A)
+  ("a" "5"))
 
-(deftest test-word? ()
-  (is (equal (list #\a #\b #\c)
-	     (car (parse-string (word?) "abc")))))
+(defparsertest test-alphanum? (alphanum?)
+  ("A" #\A "b" #\b "1" #\1 "5" #\5)
+  (" " ","))
 
-(deftest test-string? ()
-  (is (equal (list #\a #\b #\c)
-	     (car (parse-string (string? (list #\a #\b #\c)) "abc")))))
+(defparsertest test-word? (word?)
+  ("abc" (list #\a #\b #\c) "   " nil "123" nil)
+  ())
 
-(deftest test-many? ()
-  (is (equal (list nil)
-	     (parse-string (many? (letter?)) "   ")))
-  (is (equal (list #\a #\b #\c)
-	     (car (parse-string (many? (letter?)) "abc"))))
-  (is (equal (list #\a #\b)
-	     (cadr (parse-string (many? (letter?)) "abc")))))
+(defparsertest test-string? (string? (list #\a #\b #\c))
+  ("abc" (list #\a #\b #\c))
+  ("cde" "abd"))
 
-(deftest test-many1? ()
-  (is (equal nil
-	     (parse-string (many1? (letter?)) "   ")))
-  (is (equal (list #\a #\b #\c)
-	     (car (parse-string (many1? (letter?)) "abc"))))
-  (is (equal (list #\a #\b)
-	     (cadr (parse-string (many1? (letter?)) "abc")))))
+(defparsertest test-many? (many? (letter?))
+  ("abc" (list #\a #\b #\c) "cdef" (list #\c #\d #\e #\f) "Aaa12" (list #\A #\a #\a) "" nil
+   "123" nil " ," nil " a" nil)
+  ())
 
-(deftest test-times? ()
-  (is (equal nil
-	     (parse-string (times? (letter?) 2) "a")))
-  (is (equal (list #\a #\b #\c)
-	     (car (parse-string (times? (letter?) 3) "abc"))))
-  (is (equal (list #\a #\b)
-	     (car (parse-string (times? (letter?) 2) "abc")))))
+(defparsertest test-many1? (many1? (letter?))
+  ("abc" (list #\a #\b #\c))
+  ("" "123" " a"))
 
-(deftest test-atleast? ()
-  (is (equal nil
-	     (parse-string (atleast? (letter?) 2) "a")))
-  (is (equal (list #\a #\b #\c #\d #\e)
-	     (car (parse-string (atleast? (letter?) 3) "abcde"))))
-  (is (equal (list #\a #\b)
-	     (cadr (parse-string (atleast? (letter?) 2) "abc")))))
+(defparsertest test-times? (times? (letter?) 3)
+  ("abc" (list #\a #\b #\c) "abcd" (list #\a #\b #\c))
+  ("" "a" "ab"))
+
+(defparsertest test-atleast? (atleast? (letter?) 3)
+  ("abc" (list #\a #\b #\c) "abcd" (list #\a #\b #\c #\d))
+  ("" "a" "ab"))
+
+(defparsertest test-atmost? (atmost? (letter?) 3)
+  ("a" (list #\a) "ab" (list #\a #\b) "abc" (list #\a #\b #\c) "abcd" (list #\a #\b #\c) "" nil "1" nil)
+  ())
+
+(defparsertest test-between? (between? (letter?) 2 3)
+  ("ab" (list #\a #\b) "abc" (list #\a #\b #\c) "abcd" (list #\a #\b #\c))
+  ("a" ""))
+
+(defparsertest test-int? (int?)
+  ("5" 5 "12" 12 "145" 145 "-56" -56)
+  ("a" "b" " "))
+
+(defparsertest test-sepby1? (sepby1? (int?) (char? #\,))
+  ("1,2,3" (list 1 2 3) "4,-5,6" (list 4 -5 6) "23" (list 23))
+  ("" "  " "abc"))
+
+(defparsertest test-bracket? (bracket? (char? #\[) (sepby1? (int?) (char? #\,)) (char? #\]))
+  ("[1,2,3]" (list 1 2 3) "[4,-5,6]" (list 4 -5 6) "[23]" (list 23))
+  ("" "  " "abc" "1,2,3" "[4,5,6"))
+
+(defparsertest test-sepby? (sepby? (int?) (char? #\,))
+  ("1,2,3" (list 1 2 3) "4,-5,6" (list 4 -5 6) "23" (list 23) "" nil "abc" nil)
+  ())
+
+(defparsertest test-nat? (nat?)
+  ("1" 1 "23" 23)
+  ("-1"))
+
+(defparsertest test-chainl1? (chainl1? (digit?) (result #'list))
+  ("123" (list (list #\1  #\2) #\3))
+  (""))
+
+(defparsertest test-chainr1? (chainr1? (digit?) (result #'list))
+  ("123" (list #\1 (list #\2 #\3)))
+  (""))
+
+(defparsertest test-many* (many* (letter?))
+  ("abc" (list #\a #\b #\c) "cdef" (list #\c #\d #\e #\f) "Aaa12" (list #\A #\a #\a) "" nil
+   "123" nil " ," nil " a" nil)
+  ())
+
+(defparsertest test-many1* (many1* (letter?))
+  ("abc" (list #\a #\b #\c))
+  ("" "123" " a"))
+
+(defparsertest test-atleast* (atleast* (letter?) 3)
+  ("abc" (list #\a #\b #\c) "abcd" (list #\a #\b #\c #\d))
+  ("" "a" "ab"))
+
+(defparsertest test-atmost* (atmost* (letter?) 3)
+  ("a" (list #\a) "ab" (list #\a #\b) "abc" (list #\a #\b #\c) "abcd" (list #\a #\b #\c) "" nil "1" nil)
+  ())
+
+(defparsertest test-between* (between* (letter?) 2 3)
+  ("ab" (list #\a #\b) "abc" (list #\a #\b #\c) "abcd" (list #\a #\b #\c))
+  ("a" ""))
+
+(defparsertest test-sepby1* (sepby1* (int?) (char? #\,))
+  ("1,2,3" (list 1 2 3) "4,-5,6" (list 4 -5 6) "23" (list 23))
+  ("" "  " "abc"))
+
+(defparsertest test-sepby* (sepby* (int?) (char? #\,))
+  ("1,2,3" (list 1 2 3) "4,-5,6" (list 4 -5 6) "23" (list 23) "" nil "abc" nil)
+  ())
+
+(defparsertest test-chainl1* (chainl1* (digit?) (result #'list))
+  ("123" (list (list #\1  #\2) #\3))
+  (""))
+
+(defparsertest test-chainr1* (chainr1* (digit?) (result #'list))
+  ("123" (list #\1 (list #\2 #\3)))
+  (""))
+
+(defparsertest test-nat* (nat*)
+  ("1" 1 "23" 23)
+  ("-1"))
+
+(defparsertest test-int* (int*)
+  ("5" 5 "12" 12 "145" 145 "-56" -56)
+  ("a" "b" " "))

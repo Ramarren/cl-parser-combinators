@@ -44,7 +44,16 @@
 	   #:chainr*
 	   #:memoize?
 	   #:curtail?
+	   #:force?
 	   #:times?
 	   #:atleast?
 	   #:atmost?
-	   #:between?))
+	   #:between?
+	   #:current-result
+	   #:next-result
+	   #:gather-results
+	   #:tree-of
+	   #:suffix-of
+	   #:atmost*
+	   #:between*
+	   #:atleast*))
