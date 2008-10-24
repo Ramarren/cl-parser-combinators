@@ -36,7 +36,7 @@
                                        (progn ,@body))))))))))
 
 (defmacro def-memo-parser (name argument-list &body body)
-  "Define memoized parser parametrized by one argument, which should be equal under equal."
+  "Define memoized parser parametrized by an argument list which should be equal under equal."
   (with-unique-names (cache-table cache)
     (destructuring-bind (docstring body)
         (if (stringp (car body))
