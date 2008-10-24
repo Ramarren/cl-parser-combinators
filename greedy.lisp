@@ -86,12 +86,28 @@
 
 (defun chainl1* (p op)
   "Parser: accept as many as possible, but at least one of p, reduced by result of op with left associativity"
-  (labels ((rest-chain (x)
-	     (choice1
-	      (mdo (<- f op)
-		   (<- y p)
-		   (rest-chain (funcall f x y)))
-	      (result x))))
+  (labels ((rest-chain (init-x)
+	     (delay
+	       (let ((p (force p))
+		     (op (force op)))
+		 (define-oneshot-result inp is-unread
+		   (let ((final-result (iter (for f-result next (current-result (funcall op p-inp)))
+					     (while f-result)
+					     (for f-inp next (suffix-of f-result))
+					     (for p-result next (current-result (funcall p f-inp)))
+					     (while p-result)
+					     (for p-inp initially inp then (suffix-of p-result))
+					     (for f = (tree-of f-result))
+					     (for x initially init-x then tree)
+					     (for y = (tree-of p-result))
+					     (for tree next (funcall f x y))
+					     (finally (return (list tree p-inp))))))
+		     (if (car final-result)
+			 (make-instance 'parser-possibility
+					:tree (car final-result)
+					:suffix (cadr final-result))
+			 (make-instance 'parser-possibility
+					:tree init-x :suffix inp))))))))
     (bind p #'rest-chain)))
 
 (def-cached-parser nat*
@@ -110,12 +126,36 @@
 
 (defun chainr1* (p op)
   "Parser: accept as many as possible, but at least one of p, reduced by result of op with right associativity"
-  (bind p #'(lambda (x)
-	      (choice1
-	       (mdo (<- f op)
-		    (<- y (chainr1* p op))
-		    (result (funcall f x y)))
-	       (result x)))))
+  (bind p
+    #'(lambda (init-x)
+	(delay
+	  (let ((p (force p))
+		(op (force op)))
+	    (define-oneshot-result inp is-unread
+	      (let ((final-result
+		     (iter (for f-result next (current-result (funcall op p-inp)))
+			   (for f-inp next (suffix-of f-result))
+			   (for p-result next (current-result (funcall p f-inp)))
+			   (for p-inp initially inp then (suffix-of p-result))
+			   (while (and f-result p-result))
+			   (for f = (tree-of f-result))
+			   (for y = (tree-of p-result))
+			   (collect f into function-list)
+			   (collect y into y-list)
+			   (finally (let ((rev-y-list (nreverse (cons init-x y-list))))
+				      (return (list (iter (for x in (cdr rev-y-list))
+							  (for f in function-list)
+							  (for tree next (if (first-iteration-p)
+									     (funcall f x (car rev-y-list))
+									     (funcall f x tree)))
+							  (finally (return tree)))
+						    p-inp)))))))
+		(if (car final-result)
+		    (make-instance 'parser-possibility
+				   :tree (car final-result)
+				   :suffix (cadr final-result))
+		    (make-instance 'parser-possibility
+				   :tree init-x :suffix inp)))))))))
 
 (defun chainl* (p op v)
   "Parser: like chainl1*, but will return v if no p can be parsed"
