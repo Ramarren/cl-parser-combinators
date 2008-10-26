@@ -173,15 +173,15 @@
 (defun find-after? (p q)
   "Parser: Find first q after some sequence of p."
   (delay
-    (let ((p (force p))
-	  (q (force q)))
+   (let ((p (force p))
+         (q (force q)))
      (define-oneshot-result inp is-unread
        (iter (for q-result next (current-result (funcall q inp-prime)))
-	     (until q-result)
-	     (for p-result next (current-result (funcall p inp-prime)))
-	     (while p-result)
-	     (for inp-prime initially inp then (suffix-of p-result))
-	     (finally (return (if q-result q-result nil))))))))
+             (until q-result)
+             (for p-result next (current-result (funcall p inp-prime)))
+             (while p-result)
+             (for inp-prime initially inp then (suffix-of p-result))
+             (finally (return (if q-result q-result nil))))))))
 
 (defun find? (q)
   "Parser: Find first q"
