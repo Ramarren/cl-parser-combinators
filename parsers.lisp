@@ -33,6 +33,9 @@
   "Parser: accept a specific list of tokens"
   (match character-list
     (() (result nil))
+    ("" (result nil))
+    (_string (where (stringp _string))
+	     (string? (coerce _string 'list)))
     ((_x . _xs) (mdo (char? _x) (string? _xs) (result (cons _x _xs))))))
 
 ;;; all repetition parsers return result as list
