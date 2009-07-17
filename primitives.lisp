@@ -1,90 +1,37 @@
 (in-package :parser-combinators)
 
-;;; macros for defining parsers
-
-(defvar *parser-cache* (make-hash-table))
-
-(defmacro def-cached-parser (name &body body)
-  "Define constant parser name. It will we created only once. No parameters."
-  (with-unique-names (cache-name)
-    (destructuring-bind (docstring body)
-        (if (stringp (car body))
-            (list (car body) (cdr body))
-            (list nil body))
-      `(progn
-         (setf (gethash ',name *parser-cache*)
-               (progn ,@body))
-         (declaim (inline ,name))
-         (defun ,name ()
-           ,@(list docstring)
-           (gethash ',name *parser-cache*))))))
-
-(defmacro def-memo1-parser (name argument &body body)
-  "Define memoized parser parametrized by one argument, which should be equal under equal."
-  (with-unique-names (cache-table cache)
-    (destructuring-bind (docstring body)
-        (if (stringp (car body))
-            (list (car body) (cdr body))
-            (list nil body))
-      `(progn
-         (setf (gethash ',name *parser-cache*) (make-hash-table :test 'equal))
-         (defun ,name (,argument)
-           ,@(list docstring)
-           (let ((,cache-table (gethash ',name *parser-cache*)))
-             (let ((,cache (gethash ,argument ,cache-table)))
-               (if ,cache ,cache (setf (gethash ,argument ,cache-table)
-                                       (progn ,@body))))))))))
-
-(defmacro def-memo-parser (name argument-list &body body)
-  "Define memoized parser parametrized by an argument list which should be equal under equal."
-  (with-unique-names (cache-table cache)
-    (destructuring-bind (docstring body)
-        (if (stringp (car body))
-            (list (car body) (cdr body))
-            (list nil body))
-      `(progn
-         (setf (gethash ',name *parser-cache*) (make-hash-table :test 'equal))
-         (defun ,name (,@argument-list)
-           ,@(list docstring)
-           (let ((cache-table (gethash ',name *parser-cache*)))
-             (let ((,cache (gethash (list ,@argument-list) ,cache-table)))
-               (if ,cache ,cache (setf (gethash (list ,@argument-list) ,cache-table)
-                                       (progn ,@body))))))))))
-
 ;;; primitive parsers
 (declaim (inline result))
 (defun result (v)
   "Primitive parser: return v, leaves input unmodified."
-  (delay
-    #'(lambda (inp)
-        (let ((closure-value (make-instance 'parser-possibility
-                                            :tree v :suffix inp)))
-          (make-instance 'parse-result
-                         :continuation #'(lambda ()
-                                           (when closure-value
-                                             (prog1
-                                                 closure-value
-                                               (setf closure-value nil)))))))))
+  #'(lambda (inp)
+      (let ((closure-value (make-instance 'parser-possibility
+                                          :tree v :suffix inp)))
+        (make-instance 'parse-result
+                       :continuation #'(lambda ()
+                                         (when closure-value
+                                           (prog1
+                                               closure-value
+                                             (setf closure-value nil))))))))
 
-(def-cached-parser zero
+(defun zero ()
   "Primitive parser: parsing failure"
-  (delay
-    (constantly (make-instance 'parse-result))))
+  (constantly (make-instance 'parse-result)))
 
-(def-cached-parser item
-  "Primitive parser: consume item from input and return it."
-  (delay
-    #'(lambda (inp)
-        (let ((closure-value (make-instance 'parser-possibility
-                                            :tree (car inp) :suffix (cdr inp))))
-          (if inp
-              (make-instance 'parse-result
-                             :continuation #'(lambda ()
-                                               (when closure-value
-                                                 (prog1
-                                                     closure-value
-                                                   (setf closure-value nil)))))
-              (make-instance 'parse-result))))))
+(defun item ()
+    "Primitive parser: consume item from input and return it."
+  #'(lambda (inp)
+      (typecase inp
+        (end-context (make-instance 'parse-result))
+        (context
+           (let ((closure-value (make-instance 'parser-possibility
+                                               :tree (context-peek inp) :suffix (context-next inp))))
+             (make-instance 'parse-result
+                            :continuation #'(lambda ()
+                                              (when closure-value
+                                                (prog1
+                                                    closure-value
+                                                  (setf closure-value nil))))))))))
 
 (declaim (inline sat))
 (defun sat (predicate)
@@ -94,13 +41,19 @@
                        (result x)
                        (zero)))))
 
-(defun force? (parser-promise)
+(defun force? (parser)
   "Parser modifier: fully realize result from parser"
-  (delay
-    (let ((parser (force parser-promise)))
-      #'(lambda (inp)
-          (let ((result (funcall parser inp)))
-            (let ((all-results (gather-results result)))
-              (make-instance 'parse-result
-                             :continuation #'(lambda ()
-                                               (pop all-results)))))))))
+  #'(lambda (inp)
+      (let ((result (funcall parser inp)))
+        (let ((all-results (gather-results result)))
+          (make-instance 'parse-result
+                         :continuation #'(lambda ()
+                                           (pop all-results)))))))
+
+(defmacro delayed? (parser)
+  "Parser modifier macro: parser will be built when called. This is necessary for left-recursive parsers."
+  `(let ((parser-cache nil))
+     #'(lambda (inp)
+         (unless parser-cache
+           (setf parser-cache ,parser))
+         (funcall parser-cache inp))))

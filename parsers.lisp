@@ -1,35 +1,35 @@
 (in-package :parser-combinators)
 
-(def-memo1-parser char? character
+(defun char? (character)
   "Parser: accept token eql to argument"
   (sat (curry #'eql character)))
 
-(def-cached-parser digit?
+(defun digit? ()
   "Parser: accept digit character"
   (sat #'digit-char-p))
 
-(def-cached-parser lower?
+(defun lower? ()
   "Parser: accept lowercase character"
   (sat #'lower-case-p))
 
-(def-cached-parser upper?
+(defun upper? ()
   "Parser: accept uppercase character"
   (sat #'upper-case-p))
 
-(def-cached-parser letter?
+(defun letter? ()
   "Parser: accept alphabetic character"
   (sat #'alpha-char-p))
 
-(def-cached-parser alphanum?
+(defun alphanum? ()
   "Parser: accept alphanumeric character"
   (sat #'alphanumericp))
 
-(def-cached-parser word?
+(defun word? ()
   "Parser: accept a string of alphabetic characters"
   (choice (mdo (<- x (letter?)) (<- xs (word?)) (result (cons x xs)))
           (result nil)))
 
-(def-memo1-parser string? character-list
+(defun string? (character-list)
   "Parser: accept a specific list of tokens"
   (match character-list
     (() (result nil))
@@ -73,7 +73,7 @@
       (atmost? parser max)
       (mdo (<- x parser) (<- xs (between? parser (1- min) (1- max))) (result (cons x xs)))))
 
-(def-cached-parser int?
+(defun int? ()
   "Parser: accept and integer"
   (mdo (<- f (choice (mdo (char? #\-) (result #'-)) (result #'identity)))
        (<- n (nat?))
@@ -103,7 +103,7 @@
               (result x))))
     (bind p #'rest-chain)))
 
-(def-cached-parser nat?
+(defun nat? ()
   "Parser: accept natural numbers"
   (chainl1? (mdo (<- x (digit?))
                  (result (digit-char-p x)))

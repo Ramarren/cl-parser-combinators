@@ -1,9 +1,6 @@
 (defpackage :parser-combinators
     (:use :cl :iterate :alexandria :bpm)
-  (:export #:def-cached-parser
-           #:def-memo1-parser
-           #:def-memo-parser
-           #:result
+  (:export #:result
            #:zero
            #:item
            #:sat
@@ -56,4 +53,7 @@
            #:suffix-of
            #:atmost*
            #:between*
-           #:atleast*))
+           #:atleast*
+           #:make-context
+           #:delayed?
+           #:<-))

@@ -2,9 +2,9 @@
 
 (defclass context ()
   ((cache    :accessor cache-of    :initarg :cache :initform (make-hash-table))
-   (storage  :accessor storage-of  :initarg :storage)
+   (storage  :accessor storage-of  :initarg :storage :initform nil)
    (position :accessor position-of :initarg :position :initform 0)
-   (length   :accessor length-of   :initarg :length)))
+   (length   :accessor length-of   :initarg :length :initform 0)))
 
 (defgeneric context-peek (context))
 (defgeneric context-next (context))
@@ -24,7 +24,9 @@
   ())
 
 (defmethod make-context ((list list))
-  (make-instance 'list-context :storage list :length (length list)))
+  (if (null list)
+      (make-instance 'end-context)
+      (make-instance 'list-context :storage list :length (length list))))
 
 (defmethod context-next ((context list-context))
   (with-accessors ((cache cache-of) (storage storage-of) (position position-of) (length length-of))
@@ -51,7 +53,9 @@
   ())
 
 (defmethod make-context ((vector vector))
-  (make-instance 'vector-context :storage vector :length (length vector)))
+  (if (zerop (length vector))
+      (make-instance 'end-context)
+      (make-instance 'vector-context :storage vector :length (length vector))))
 
 (defmethod context-next ((context vector-context))
   (with-accessors ((cache cache-of) (storage storage-of) (position position-of) (length length-of))

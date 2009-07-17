@@ -14,17 +14,15 @@
 
 (defun many* (parser)
   "Parser: collect as many of first result of parser as possible"
-  (delay
-    (let ((parser (force parser)))
-      (define-oneshot-result inp is-unread
-        (let ((final-result (iter (for result next (current-result (funcall parser inp-prime)))
-                                  (while result)
-                                  (for inp-prime initially inp then (suffix-of result))
-                                  (collect (tree-of result) into tree)
-                                  (finally (return (list tree inp-prime))))))
-          (make-instance 'parser-possibility
-                         :tree (car final-result)
-                         :suffix (cadr final-result)))))))
+  (define-oneshot-result inp is-unread
+    (let ((final-result (iter (for result next (current-result (funcall parser inp-prime)))
+                              (while result)
+                              (for inp-prime initially inp then (suffix-of result))
+                              (collect (tree-of result) into tree)
+                              (finally (return (list tree inp-prime))))))
+      (make-instance 'parser-possibility
+                     :tree (car final-result)
+                     :suffix (cadr final-result)))))
 
 
 (defun many1* (parser)
@@ -37,38 +35,34 @@
   "Parser: accept as many as possible and at least count of parser"
   (if (zerop count)
       (many* parser)
-      (delay
-        (define-oneshot-result inp is-unread
-          (let ((grab-result (current-result (funcall (force (many* parser)) inp))))
-            (when (>= (length (tree-of grab-result)) count)
-              grab-result))))))
+      (define-oneshot-result inp is-unread
+        (let ((grab-result (current-result (funcall (many* parser) inp))))
+          (when (>= (length (tree-of grab-result)) count)
+            grab-result)))))
 
 
 (defun atmost* (parser count)
   "Parser: accept as many as possible but at most count of parser"
-  (delay
-    (let ((parser (force parser)))
-      (define-oneshot-result inp is-unread
-        (let ((final-result (iter (for result next (current-result (funcall parser inp-prime)))
-                                  (for i from 0)
-                                  (while (and result (< i count)))
-                                  (for inp-prime initially inp then (suffix-of result))
-                                  (collect (tree-of result) into tree)
-                                  (finally (return (list tree inp-prime))))))
-          (make-instance 'parser-possibility
-                         :tree (car final-result)
-                         :suffix (cadr final-result)))))))
+  (define-oneshot-result inp is-unread
+    (let ((final-result (iter (for result next (current-result (funcall parser inp-prime)))
+                              (for i from 0)
+                              (while (and result (< i count)))
+                              (for inp-prime initially inp then (suffix-of result))
+                              (collect (tree-of result) into tree)
+                              (finally (return (list tree inp-prime))))))
+      (make-instance 'parser-possibility
+                     :tree (car final-result)
+                     :suffix (cadr final-result)))))
 
 (defun between* (parser min max)
   "Parser: accept as many as possible but between min and max of parser"
   (assert (>= max min))
   (if (zerop min)
       (atmost* parser max)
-      (delay
-        (define-oneshot-result inp is-unread
-          (let ((grab-result (current-result (funcall (force (atmost* parser max)) inp))))
-            (when (>= (length (tree-of grab-result)) min)
-              grab-result))))))
+      (define-oneshot-result inp is-unread
+        (let ((grab-result (current-result (funcall (atmost* parser max) inp))))
+          (when (>= (length (tree-of grab-result)) min)
+            grab-result)))))
 
 
 (defun sepby1* (parser-item parser-separator)
@@ -87,30 +81,27 @@
 (defun chainl1* (p op)
   "Parser: accept as many as possible, but at least one of p, reduced by result of op with left associativity"
   (labels ((rest-chain (init-x)
-             (delay
-               (let ((p (force p))
-                     (op (force op)))
-                 (define-oneshot-result inp is-unread
-                   (let ((final-result (iter (for f-result next (current-result (funcall op p-inp)))
-                                             (while f-result)
-                                             (for f-inp next (suffix-of f-result))
-                                             (for p-result next (current-result (funcall p f-inp)))
-                                             (while p-result)
-                                             (for p-inp initially inp then (suffix-of p-result))
-                                             (for f = (tree-of f-result))
-                                             (for x initially init-x then tree)
-                                             (for y = (tree-of p-result))
-                                             (for tree next (funcall f x y))
-                                             (finally (return (list tree p-inp))))))
-                     (if (car final-result)
-                         (make-instance 'parser-possibility
-                                        :tree (car final-result)
-                                        :suffix (cadr final-result))
-                         (make-instance 'parser-possibility
-                                        :tree init-x :suffix inp))))))))
+             (define-oneshot-result inp is-unread
+               (let ((final-result (iter (for f-result next (current-result (funcall op p-inp)))
+                                         (while f-result)
+                                         (for f-inp next (suffix-of f-result))
+                                         (for p-result next (current-result (funcall p f-inp)))
+                                         (while p-result)
+                                         (for p-inp initially inp then (suffix-of p-result))
+                                         (for f = (tree-of f-result))
+                                         (for x initially init-x then tree)
+                                         (for y = (tree-of p-result))
+                                         (for tree next (funcall f x y))
+                                         (finally (return (list tree p-inp))))))
+                 (if (car final-result)
+                     (make-instance 'parser-possibility
+                                    :tree (car final-result)
+                                    :suffix (cadr final-result))
+                     (make-instance 'parser-possibility
+                                    :tree init-x :suffix inp))))))
     (bind p #'rest-chain)))
 
-(def-cached-parser nat*
+(defun nat* ()
   "Parser: accept natural number, consuming as many digits as possible"
   (chainl1* (mdo (<- x (digit?))
                  (result (digit-char-p x)))
@@ -118,7 +109,7 @@
              #'(lambda (x y)
                  (+ (* 10 x) y)))))
 
-(def-cached-parser int*
+(defun int* ()
   "Parser: accept integer, consuming as many digits as possible"
   (mdo (<- f (choice1 (mdo (char? #\-) (result #'-)) (result #'identity)))
        (<- n (nat*))
@@ -128,35 +119,32 @@
   "Parser: accept as many as possible, but at least one of p, reduced by result of op with right associativity"
   (bind p
     #'(lambda (init-x)
-        (delay
-          (let ((p (force p))
-                (op (force op)))
-            (define-oneshot-result inp is-unread
-              (let ((final-result
-                     (iter (for f-result next (current-result (funcall op p-inp)))
-                           (while f-result)
-                           (for f-inp next (suffix-of f-result))
-                           (while p-result)
-                           (for p-result next (current-result (funcall p f-inp)))
-                           (for p-inp initially inp then (suffix-of p-result))
-                           (for f = (tree-of f-result))
-                           (for y = (tree-of p-result))
-                           (collect f into function-list)
-                           (collect y into y-list)
-                           (finally (let ((rev-y-list (nreverse (cons init-x y-list))))
-                                      (return (list (iter (for x in (cdr rev-y-list))
-                                                          (for f in function-list)
-                                                          (for tree next (if (first-iteration-p)
-                                                                             (funcall f x (car rev-y-list))
-                                                                             (funcall f x tree)))
-                                                          (finally (return tree)))
-                                                    p-inp)))))))
-                (if (car final-result)
-                    (make-instance 'parser-possibility
-                                   :tree (car final-result)
-                                   :suffix (cadr final-result))
-                    (make-instance 'parser-possibility
-                                   :tree init-x :suffix inp)))))))))
+        (define-oneshot-result inp is-unread
+          (let ((final-result
+                 (iter (for f-result next (current-result (funcall op p-inp)))
+                       (while f-result)
+                       (for f-inp next (suffix-of f-result))
+                       (while p-result)
+                       (for p-result next (current-result (funcall p f-inp)))
+                       (for p-inp initially inp then (suffix-of p-result))
+                       (for f = (tree-of f-result))
+                       (for y = (tree-of p-result))
+                       (collect f into function-list)
+                       (collect y into y-list)
+                       (finally (let ((rev-y-list (nreverse (cons init-x y-list))))
+                                  (return (list (iter (for x in (cdr rev-y-list))
+                                                      (for f in function-list)
+                                                      (for tree next (if (first-iteration-p)
+                                                                         (funcall f x (car rev-y-list))
+                                                                         (funcall f x tree)))
+                                                      (finally (return tree)))
+                                                p-inp)))))))
+            (if (car final-result)
+                (make-instance 'parser-possibility
+                               :tree (car final-result)
+                               :suffix (cadr final-result))
+                (make-instance 'parser-possibility
+                               :tree init-x :suffix inp)))))))
 
 (defun chainl* (p op v)
   "Parser: like chainl1*, but will return v if no p can be parsed"
@@ -172,16 +160,13 @@
 
 (defun find-after? (p q)
   "Parser: Find first q after some sequence of p."
-  (delay
-   (let ((p (force p))
-         (q (force q)))
-     (define-oneshot-result inp is-unread
-       (iter (for q-result next (current-result (funcall q inp-prime)))
-             (until q-result)
-             (for p-result next (current-result (funcall p inp-prime)))
-             (while p-result)
-             (for inp-prime initially inp then (suffix-of p-result))
-             (finally (return (if q-result q-result nil))))))))
+  (define-oneshot-result inp is-unread
+    (iter (for q-result next (current-result (funcall q inp-prime)))
+          (until q-result)
+          (for p-result next (current-result (funcall p inp-prime)))
+          (while p-result)
+          (for inp-prime initially inp then (suffix-of p-result))
+          (finally (return (if q-result q-result nil))))))
 
 (defun find? (q)
   "Parser: Find first q"
