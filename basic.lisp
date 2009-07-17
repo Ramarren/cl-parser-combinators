@@ -20,6 +20,8 @@
   (:method (n (parse-result-store null))
     (declare (ignore n parse-result-store))
     nil)
+  (:method (n (parse-result parse-result))
+    (nth-result n (store-of parse-result)))
   (:method (n (parse-result-store parse-result-store))
     (with-accessors ((storage storage-of)
                      (counter counter-of)
