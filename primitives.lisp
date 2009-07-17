@@ -41,10 +41,6 @@
       (cached-arguments? ,@forms ,(gensym) ,@arguments))))
 
 ;;; primitive parsers
-(defconstant +failure-result+ (if (boundp '+failure-result+)
-                                  +failure-result+
-                                  (make-instance 'parse-result)))
-
 (declaim (inline result))
 (defun result (v)
   "Primitive parser: return v, leaves input unmodified."
