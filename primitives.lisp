@@ -41,6 +41,10 @@
       (cached-arguments? ,@forms ,(gensym) ,@arguments))))
 
 ;;; primitive parsers
+(defconstant +failure-result+ (if (boundp '+failure-result+)
+                                  +failure-result+
+                                  (make-instance 'parse-result)))
+
 (declaim (inline result))
 (defun result (v)
   "Primitive parser: return v, leaves input unmodified."
@@ -56,13 +60,13 @@
 
 (defun zero ()
   "Primitive parser: parsing failure"
-  (constantly (make-instance 'parse-result)))
+  (constantly +failure-result+))
 
 (def-cached-parser item
   "Primitive parser: consume item from input and return it."
   #'(lambda (inp)
       (typecase inp
-        (end-context (make-instance 'parse-result))
+        (end-context +failure-result+)
         (context
            (let ((closure-value (make-instance 'parser-possibility
                                                :tree (context-peek inp) :suffix (context-next inp))))
@@ -76,10 +80,21 @@
 (declaim (inline sat))
 (def-cached-arg-parser sat (predicate)
   "Parser: return a token satisfying a predicate."
-  (bind (item) #'(lambda (x)
-                   (if (funcall predicate x)
-                       (result x)
-                       (zero)))))
+  #'(lambda (inp)
+      (typecase inp
+        (end-context +failure-result+)
+        (context
+           (if (funcall predicate (context-peek inp))
+               (let ((closure-value
+                      (make-instance 'parser-possibility
+                                     :tree (context-peek inp) :suffix (context-next inp))))
+                 (make-parse-result
+                  #'(lambda ()
+                      (when closure-value
+                        (prog1
+                            closure-value
+                          (setf closure-value nil))))))
+               +failure-result+)))))
 
 (defun force? (parser)
   "Parser modifier: fully realize result from parser"
