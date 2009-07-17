@@ -30,11 +30,10 @@
   `(let ((parser ,parser)
          (parser-generator ,parser-generator))
      #'(lambda (inp)
-         (make-instance 'parse-result
-                        :continuation
-                        (execute-bind inp
-                                      parser
-                                      parser-generator)))))
+         (make-parse-result
+          (execute-bind inp
+                        parser
+                        parser-generator)))))
 
 (defun execute-choice (inp parser1 parser2)
   (let ((result1 (funcall parser1 inp))
@@ -59,9 +58,8 @@
   `(let ((parser1 ,parser1)
          (parser2 ,parser2))
      #'(lambda (inp)
-         (make-instance 'parse-result
-                        :continuation
-                        (execute-choice inp parser1 parser2)))))
+         (make-parse-result
+          (execute-choice inp parser1 parser2)))))
 
 (defmacro choice1 (parser1 parser2)
   "Combinator: one alternative from two parsers"
@@ -71,16 +69,15 @@
          (let ((parser1 parser1)
                (parser2 parser2)
                (is-unread t))
-           (make-instance 'parse-result
-                          :continuation
-                          #'(lambda ()
-                              (when is-unread
-                                (setf is-unread nil)
-                                (let ((result (funcall (execute-choice inp
-                                                                       parser1
-                                                                       parser2))))
-                                  (setf parser1 nil parser2 nil)
-                                  result))))))))
+           (make-parse-result
+            #'(lambda ()
+                (when is-unread
+                  (setf is-unread nil)
+                  (let ((result (funcall (execute-choice inp
+                                                         parser1
+                                                         parser2))))
+                    (setf parser1 nil parser2 nil)
+                    result))))))))
 
 (defmacro choices (&rest parser-list)
   "Combinator: all alternatives from multiple parsers"
@@ -95,14 +92,11 @@
      #'(lambda (inp)
          (let ((parser-list parser-list)
                (is-unread t))
-           (make-instance 'parse-result
-                          :continuation
-                          #'(lambda ()
-                              (when is-unread
-                                (setf is-unread t)
-                                (iter (for p in parser-list)
-                                      (for result = (next-result (funcall p inp)))
-                                      (finding (make-instance 'parse-result
-                                                              :top-results (list (car result-list)))
-                                               such-that result)
-                                      (finally (setf parser-list nil))))))))))
+           (make-parse-result
+            #'(lambda ()
+                (when is-unread
+                  (setf is-unread t)
+                  (iter (for p in parser-list)
+                        (for result = (next-result (funcall p inp)))
+                        (finding result)
+                        (finally (setf parser-list nil))))))))))

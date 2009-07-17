@@ -56,4 +56,5 @@
            #:atleast*
            #:make-context
            #:delayed?
-           #:<-))
+           #:<-
+           #:make-parse-result))

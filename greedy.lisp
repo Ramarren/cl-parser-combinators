@@ -5,12 +5,11 @@
 (defmacro define-oneshot-result (inp is-unread &body body)
   `(function (lambda (,inp)
      (let ((,is-unread t))
-       (make-instance 'parse-result
-                      :continuation
-                      #'(lambda ()
-                          (when ,is-unread
-                            (setf ,is-unread nil)
-                            ,@body)))))))
+       (make-parse-result
+        #'(lambda ()
+            (when ,is-unread
+              (setf ,is-unread nil)
+              ,@body)))))))
 
 (defun many* (parser)
   "Parser: collect as many of first result of parser as possible"

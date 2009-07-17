@@ -8,6 +8,6 @@
     #'(lambda (inp)
         (multiple-value-bind (result result-p) (gethash inp memo-table)
           (if result-p
-              (copy-list result)
-              (copy-list (setf (gethash inp memo-table)
-                               (funcall parser inp))))))))
+              (copy-parse-result result)
+              (copy-parse-result (setf (gethash inp memo-table)
+                                       (funcall parser inp))))))))
