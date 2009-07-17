@@ -5,16 +5,15 @@
 (defmacro define-oneshot-result (inp is-unread &body body)
   `(function (lambda (,inp)
      (let ((,is-unread t))
-       (make-parse-result
-        #'(lambda ()
-            (when ,is-unread
-              (setf ,is-unread nil)
-              ,@body)))))))
+       #'(lambda ()
+           (when ,is-unread
+             (setf ,is-unread nil)
+             ,@body))))))
 
 (defun many* (parser)
   "Parser: collect as many of first result of parser as possible"
   (define-oneshot-result inp is-unread
-    (let ((final-result (iter (for result next (current-result (funcall parser inp-prime)))
+    (let ((final-result (iter (for result next (funcall (funcall parser inp-prime)))
                               (while result)
                               (for inp-prime initially inp then (suffix-of result))
                               (collect (tree-of result) into tree)
@@ -35,7 +34,7 @@
   (if (zerop count)
       (many* parser)
       (define-oneshot-result inp is-unread
-        (let ((grab-result (current-result (funcall (many* parser) inp))))
+        (let ((grab-result (funcall (funcall (many* parser) inp))))
           (when (>= (length (tree-of grab-result)) count)
             grab-result)))))
 
@@ -43,7 +42,7 @@
 (defun atmost* (parser count)
   "Parser: accept as many as possible but at most count of parser"
   (define-oneshot-result inp is-unread
-    (let ((final-result (iter (for result next (current-result (funcall parser inp-prime)))
+    (let ((final-result (iter (for result next (funcall (funcall parser inp-prime)))
                               (for i from 0)
                               (while (and result (< i count)))
                               (for inp-prime initially inp then (suffix-of result))
@@ -59,7 +58,7 @@
   (if (zerop min)
       (atmost* parser max)
       (define-oneshot-result inp is-unread
-        (let ((grab-result (current-result (funcall (atmost* parser max) inp))))
+        (let ((grab-result (funcall (funcall (atmost* parser max) inp))))
           (when (>= (length (tree-of grab-result)) min)
             grab-result)))))
 
@@ -81,10 +80,10 @@
   "Parser: accept as many as possible, but at least one of p, reduced by result of op with left associativity"
   (labels ((rest-chain (init-x)
              (define-oneshot-result inp is-unread
-               (let ((final-result (iter (for f-result next (current-result (funcall op p-inp)))
+               (let ((final-result (iter (for f-result next (funcall (funcall op p-inp)))
                                          (while f-result)
                                          (for f-inp next (suffix-of f-result))
-                                         (for p-result next (current-result (funcall p f-inp)))
+                                         (for p-result next (funcall (funcall p f-inp)))
                                          (while p-result)
                                          (for p-inp initially inp then (suffix-of p-result))
                                          (for f = (tree-of f-result))
@@ -120,10 +119,10 @@
     #'(lambda (init-x)
         (define-oneshot-result inp is-unread
           (let ((final-result
-                 (iter (for f-result next (current-result (funcall op p-inp)))
+                 (iter (for f-result next (funcall (funcall op p-inp)))
                        (while f-result)
                        (for f-inp next (suffix-of f-result))
-                       (for p-result next (current-result (funcall p f-inp)))
+                       (for p-result next (funcall (funcall p f-inp)))
                        (while p-result)
                        (for p-inp initially inp then (suffix-of p-result))
                        (for f = (tree-of f-result))
@@ -160,9 +159,9 @@
 (defun find-after? (p q)
   "Parser: Find first q after some sequence of p."
   (define-oneshot-result inp is-unread
-    (iter (for q-result next (current-result (funcall q inp-prime)))
+    (iter (for q-result next (funcall (funcall q inp-prime)))
           (until q-result)
-          (for p-result next (current-result (funcall p inp-prime)))
+          (for p-result next (funcall (funcall p inp-prime)))
           (while p-result)
           (for inp-prime initially inp then (suffix-of p-result))
           (finally (return (if q-result q-result nil))))))
