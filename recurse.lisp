@@ -1,6 +1,6 @@
 (in-package :parser-combinators)
 
-(defun curtail? (parser label)
+(defun curtail? (parser &optional (label (gensym)))
   "Add recursion curtailing to promise."
   (unless (gethash label *curtail-table*)
     (setf (gethash label *curtail-table*) (make-hash-table)))

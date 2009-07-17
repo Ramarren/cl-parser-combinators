@@ -1,6 +1,6 @@
 (in-package :parser-combinators)
 
-(defun memoize? (parser label)
+(defun memoize? (parser &optional (label (gensym)))
   "Create identical, but memoized, parser."
   (unless (gethash label *memo-table*)
     (setf (gethash label *memo-table*) (make-hash-table)))
