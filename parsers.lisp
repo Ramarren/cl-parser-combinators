@@ -1,35 +1,35 @@
 (in-package :parser-combinators)
 
-(defun char? (character)
+(def-cached-arg-parser char? (character)
   "Parser: accept token eql to argument"
   (sat (curry #'eql character)))
 
-(defun digit? ()
+(def-cached-parser digit?
   "Parser: accept digit character"
   (sat #'digit-char-p))
 
-(defun lower? ()
+(def-cached-parser lower?
   "Parser: accept lowercase character"
   (sat #'lower-case-p))
 
-(defun upper? ()
+(def-cached-parser upper?
   "Parser: accept uppercase character"
   (sat #'upper-case-p))
 
-(defun letter? ()
+(def-cached-parser letter?
   "Parser: accept alphabetic character"
   (sat #'alpha-char-p))
 
-(defun alphanum? ()
+(def-cached-parser alphanum?
   "Parser: accept alphanumeric character"
   (sat #'alphanumericp))
 
-(defun word? ()
+(def-cached-parser word?
   "Parser: accept a string of alphabetic characters"
   (choice (mdo (<- x (letter?)) (<- xs (word?)) (result (cons x xs)))
           (result nil)))
 
-(defun string? (character-list)
+(def-cached-arg-parser string? (character-list)
   "Parser: accept a specific list of tokens"
   (match character-list
     (() (result nil))

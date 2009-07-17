@@ -57,4 +57,9 @@
            #:make-context
            #:delayed?
            #:<-
-           #:make-parse-result))
+           #:make-parse-result
+           #:cache?
+           #:cached?
+           #:def-cached-parser
+           #:cached-arguments?
+           #:def-cached-arg-parser))

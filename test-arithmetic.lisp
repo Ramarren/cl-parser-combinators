@@ -9,19 +9,19 @@
 ;;; is having to define parser for every level of precedence cheating? easy enough to generate
 ;;; automatically though
 
-(defun factor-op? ()
+(def-cached-parser factor-op?
   (choice1 (mdo (char? #\/) (result (curry #'list '/)))
            (mdo (char? #\*) (result (curry #'list '*)))))
 
-(defun factor* ()
+(def-cached-parser factor*
   (chainl1* (nat*) (factor-op?)))
 
-(defun expr-op? ()
+(def-cached-parser expr-op?
   (choice1 (mdo (char? #\+) (result (curry #'list '+)))
            (mdo (char? #\-) (result #'(lambda (x y)
                                         (list '+ x (list '- y)))))))
 
-(defun arith* ()
+(def-cached-parser arith*
   (chainl1* (factor*) (expr-op?)))
 
 (deftest test-arith1 ()
