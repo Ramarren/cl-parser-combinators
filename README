@@ -1,1 +1,3 @@
 This is an experimental project. Do not use for any serious purpose.
+
+To elaborate: it more or less works, but was not tested for any but the simplest cases, some parts of the interface are clunky, it is quite slow in general and probably has a tendency for exponential explosions.
