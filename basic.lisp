@@ -16,6 +16,10 @@
    (counter      :accessor counter-of      :initarg :counter :initform 0)
    (continuation :accessor continuation-of :initarg :continuation :initform (constantly nil))))
 
+(defclass parse-result ()
+  ((store   :accessor store-of   :initarg :store :initform nil)
+   (current :accessor current-of :initarg :current :initform -1)))
+
 (defgeneric nth-result (n parse-result-store)
   (:method (n (parse-result-store null))
     (declare (ignore n parse-result-store))
@@ -42,10 +46,6 @@
                   (while next-result)
                   (finally (setf counter (1+ i))
                            (return next-result))))))))
-
-(defclass parse-result ()
-  ((store   :accessor store-of   :initarg :store :initform nil)
-   (current :accessor current-of :initarg :current :initform -1)))
 
 (defun make-parse-result (continuation)
   (make-instance 'parse-result :store

@@ -12,6 +12,6 @@
                (:file "combinators" :depends-on ("package" "basic" "lazy"))
                (:file "primitives" :depends-on ("package" "lazy" "basic" "combinators" "contexts"))
                (:file "parsers" :depends-on ("package" "basic" "primitives" "combinators"))
-               (:file "memoize" :depends-on ("package"))
-               (:file "recurse" :depends-on ("package"))
+               (:file "memoize" :depends-on ("package" "basic"))
+               (:file "recurse" :depends-on ("package" "basic"))
                (:file "greedy" :depends-on ("package" "basic" "primitives" "combinators"))))
