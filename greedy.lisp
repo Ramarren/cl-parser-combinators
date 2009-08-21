@@ -156,6 +156,32 @@
    (chainr1* p op)
    (result v)))
 
+(def-cached-arg-parser string? (sequence)
+  "Parser: accept a sequence of EQL elements."
+  (let ((vector (coerce sequence 'vector)))
+    (define-oneshot-result inp is-unread
+      (iter (for c in-vector vector)
+            (for inp-iter initially inp then (context-next inp-iter))
+            (for inp-data = (context-peek inp-iter))
+            (unless (eql c inp-data)
+              (return nil))
+            (finally (return
+                       (make-instance 'parser-possibility
+                                      :tree (copy-seq sequence)
+                                      :suffix (context-next inp))))))))
+
+(def-cached-arg-parser times* (parser count)
+    "Parser: accept exactly count expressions accepted by parser, without backtracking."
+    (define-oneshot-result inp is-unread
+      (iter (repeat count)
+            (for p-result next (funcall (funcall parser inp-prime)))
+            (for inp-prime initially inp then (suffix-of p-result))
+            (collect p-result into results)
+            (finally (return
+                       (make-instance 'parser-possibility
+                                      :tree (mapcar #'tree-of results)
+                                      :suffix (suffix-of p-result)))))))
+
 (defun find-after? (p q)
   "Parser: Find first q after some sequence of p."
   (define-oneshot-result inp is-unread
