@@ -142,15 +142,60 @@
   "Parser: accept zero or more of parser-item separated by parser-separator"
   (choice (sepby1? parser-item parser-separator) (result nil)))
 
+;; since all intermediate results have to be kept anyway for backtracking, they might be just as
+;; well be kept not on the stack, so chainl/r1? can be implemented in terms of between? as well
+
+(defun sepby1-cons? (p op)
+  "Parser: as sepby1, but returns a list of a result of p and pairs (op p). Mainly a component parser for chains"
+  (let ((between-parser (between? (mdo (<- op-result op)
+                                       (<- p-result p)
+                                       (result (cons op-result p-result)))
+                                  1 nil)))
+    #'(lambda (inp)
+        (let ((front-continuation (funcall p inp))
+              (between-continuation nil)
+              (front nil)
+              (chain nil)
+              (state :next-result))
+          #'(lambda ()
+              (setf state :next-result)
+              (iter
+                (ecase state
+                  (:next-result
+                     (cond (between-continuation
+                            (if-let (next-chain (funcall between-continuation))
+                              (setf chain next-chain
+                                    state :return)
+                              (setf between-continuation nil
+                                    chain nil)))
+                           (front-continuation
+                            (if-let (next-front (funcall front-continuation))
+                              (setf front next-front
+                                    between-continuation (funcall between-parser (suffix-of next-front)))
+                              (setf front-continuation nil)))
+                           (t (setf state :return))))
+                  (:return
+                    (return (cond
+                              (chain (make-instance 'parser-possibility
+                                                    :suffix (suffix-of chain)
+                                                    :tree (cons (tree-of front) (tree-of chain))))
+                              (front (prog1 (make-instance 'parser-possibility
+                                                           :tree (list (tree-of front))
+                                                           :suffix (suffix-of front))
+                                       (setf front nil)))))))))))))
+
 (defun chainl1? (p op)
   "Parser: accept one or more p reduced by result of op with left associativity"
-  (labels ((rest-chain (x)
-             (choice
-              (mdo (<- f op)
-                   (<- y p)
-                   (rest-chain (funcall f x y)))
-              (result x))))
-    (bind p #'rest-chain)))
+  (let ((subparser (sepby1-cons? p op)))
+    (mdo (<- chain subparser)
+         (result
+          (destructuring-bind (front . chain) chain
+            (iter (for left initially front
+                       then (funcall op
+                                     left
+                                     right))
+                  (for (op . right) in chain)
+                  (finally (return left))))))))
 
 (defun nat? ()
   "Parser: accept natural numbers"
@@ -162,12 +207,17 @@
 
 (defun chainr1? (p op)
   "Parser: accept one or more p reduced by result of op with right associativity"
-  (bind p #'(lambda (x)
-              (choice
-               (mdo (<- f op)
-                    (<- y (chainr1? p op))
-                    (result (funcall f x y)))
-               (result x)))))
+  (let ((subparser (sepby1-cons? p op)))
+   (mdo (<- chain subparser)
+        (result
+         (destructuring-bind (front . chain) chain
+           (iter (with chain = (reverse chain))
+                 (with current-op = (car (car chain)))
+                 (with current-right = (cdr (car chain)))
+                 (for (op . right) in (cdr chain))
+                 (setf current-right (funcall current-op right current-right)
+                       current-op op)
+                 (finally (return (funcall op front current-right)))))))))
 
 (defun chainl? (p op v)
   "Parser: like chainl1?, but will return v if no p can be parsed"

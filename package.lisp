@@ -62,4 +62,5 @@
            #:cached?
            #:def-cached-parser
            #:cached-arguments?
-           #:def-cached-arg-parser))
+           #:def-cached-arg-parser
+           #:sepby1-cons?))
