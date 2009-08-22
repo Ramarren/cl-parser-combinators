@@ -44,7 +44,7 @@
                   (unless next-result
                     (setf continuation nil))
                   (while next-result)
-                  (finally (setf counter (1+ i))
+                  (finally (setf counter i)
                            (return next-result))))))))
 
 (defun make-parse-result (continuation)
