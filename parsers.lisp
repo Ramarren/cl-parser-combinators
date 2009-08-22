@@ -24,38 +24,7 @@
   "Parser: accept alphanumeric character"
   (sat #'alphanumericp))
 
-(def-cached-parser word?
-  "Parser: accept a string of alphabetic characters"
-  (choice (mdo (<- x (letter?)) (<- xs (word?)) (result (cons x xs)))
-          (result nil)))
-
-;;; all repetition parsers return result as list
-
-(defun many? (parser)
-  "Parser: accept zero or more repetitions of expression accepted by parser"
-  (choice (mdo (<- x parser) (<- xs (many? parser)) (result (cons x xs))) (result nil)))
-
-(defun many1? (parser)
-  "Parser: accept one or more of expression accepted by parser"
-  (mdo (<- x parser) (<- xs (many? parser)) (result (cons x xs))))
-
-(defun times? (parser count)
-  "Parser: accept exactly count expressions accepted by parser"
-  (if (zerop count)
-      (result nil)
-      (mdo (<- x parser) (<- xs (times? parser (1- count))) (result (cons x xs)))))
-
-(defun atleast? (parser count)
-  "Parser: accept at least count expressions accepted by parser"
-  (if (zerop count)
-      (many? parser)
-      (mdo (<- x parser) (<- xs (atleast? parser (1- count))) (result (cons x xs)))))
-
-(defun atmost? (parser count)
-  "Parser: accept at most count expressions accepted by parser"
-  (if (zerop count)
-      (result nil)
-      (choice (mdo (<- x parser) (<- xs (atmost? parser (1- count))) (result (cons x xs))) (result nil))))
+;;; implement repetition parsers in terms of (between? ...)
 
 (defun between? (parser min max &optional (result-type 'list))
   "Parser: accept between min and max expressions accepted by parser"
@@ -108,9 +77,32 @@
                             (return result))
                           (return nil)))))))))
 
+(def-cached-parser word?
+  "Parser: accept a string of alphabetic characters"
+  (between? (letter?) nil nil 'string))
+
+(defun many? (parser)
+  "Parser: accept zero or more repetitions of expression accepted by parser"
+  (between? parser nil nil))
+
+(defun many1? (parser)
+  "Parser: accept one or more of expression accepted by parser"
+  (between? parser 1 nil))
+
+(defun times? (parser count)
+  "Parser: accept exactly count expressions accepted by parser"
+  (between? parser count count))
+
+(defun atleast? (parser count)
+  "Parser: accept at least count expressions accepted by parser"
+  (between? parser count nil))
+
+(defun atmost? (parser count)
+  "Parser: accept at most count expressions accepted by parser"
+  (between? parser nil count))
 
 (defun int? ()
-  "Parser: accept and integer"
+  "Parser: accept an integer"
   (mdo (<- f (choice (mdo (char? #\-) (result #'-)) (result #'identity)))
        (<- n (nat?))
        (result (funcall f n))))
