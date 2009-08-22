@@ -31,8 +31,11 @@
   (assert (or (null min)
               (null max)
               (>= max min)))
+  ;; min=zero or nil means accept zero width results
   (assert (or (null min)
+              (zerop min)
               (plusp min)))
+  ;; can't have 0-0 parser
   (assert (or (null max)
               (plusp max)))
   ;; gather results depth-first, longest first, ie. gather shorter on returning
@@ -40,14 +43,19 @@
       (let ((continuation-stack nil)
             (result-stack nil)
             (count 1)
+            (zero-width (or (null min)
+                            (zerop min)))
             (state :next-result))
         (push (funcall parser inp) continuation-stack)
         #'(lambda ()
             (setf state :next-result)
             (iter
-              ;;(print state)
-              ;;(print continuation-stack)
-              (while continuation-stack)
+              (print state)
+              (print result-stack)
+              (print zero-width)
+              (print count)
+              (while (or continuation-stack
+                         zero-width))
               (ecase state
                 (:next-result
                    (let ((next-result (funcall (car continuation-stack))))
@@ -75,14 +83,19 @@
                          (t (pop result-stack)
                           (setf state :next-result))))
                 (:return
-                  (if result-stack
-                      (let ((result
-                             (make-instance 'parser-possibility
-                                            :tree (map result-type #'tree-of (reverse result-stack))
-                                            :suffix (suffix-of (car result-stack)))))
-                        (pop result-stack)
-                        (return result))
-                      (return nil)))))))))
+                  (return
+                    (cond (result-stack
+                           (let ((result
+                                  (make-instance 'parser-possibility
+                                                 :tree (map result-type #'tree-of (reverse result-stack))
+                                                 :suffix (suffix-of (car result-stack)))))
+                             (pop result-stack)
+                             result))
+                          (zero-width
+                           (setf zero-width nil)
+                           (make-instance 'parser-possibility
+                                          :tree nil
+                                          :suffix inp)))))))))))
 
 (def-cached-parser word?
   "Parser: accept a string of alphabetic characters"
