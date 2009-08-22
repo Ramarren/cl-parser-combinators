@@ -63,4 +63,7 @@
            #:def-cached-parser
            #:cached-arguments?
            #:def-cached-arg-parser
-           #:sepby1-cons?))
+           #:sepby1-cons?
+           #:find-after-collect?
+           #:find-after-collect*
+           #:breadth?))
