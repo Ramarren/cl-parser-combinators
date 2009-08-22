@@ -44,38 +44,45 @@
         (push (funcall parser inp) continuation-stack)
         #'(lambda ()
             (setf state :next-result)
-            (iter (ecase state
-                    (:next-result
-                       (let ((next-result (funcall (car continuation-stack))))
-                         (cond ((null next-result)
-                                (pop continuation-stack)
-                                (decf count)
-                                (setf state :check-count))
-                               ((and max (= count max))
-                                (push next-result result-stack)
-                                (setf state :return))
-                               (t
-                                (incf count)
-                                (push next-result result-stack)
-                                (push (funcall parser (suffix-of next-result)) continuation-stack)))))
-                    (:check-count
-                       (cond ((or (null continuation-stack)
-                                  (and (or (null min)
-                                           (>= count min))
-                                       (or (null max)
-                                           (<= count max))))
-                              (setf state :return))
-                             (t (pop result-stack)
-                              (setf state :next-result))))
-                    (:return
-                      (if result-stack
-                          (let ((result
-                                 (make-instance 'parser-possibility
-                                                :tree (map result-type #'tree-of (reverse result-stack))
-                                                :suffix (suffix-of (car result-stack)))))
-                            (pop result-stack)
-                            (return result))
-                          (return nil)))))))))
+            (iter
+              ;;(print state)
+              ;;(print continuation-stack)
+              (while continuation-stack)
+              (ecase state
+                (:next-result
+                   (let ((next-result (funcall (car continuation-stack))))
+                     (cond ((null next-result)
+                            (pop continuation-stack)
+                            (decf count)
+                            (setf state :check-count))
+                           ((and max (= count max))
+                            (push next-result result-stack)
+                            (setf state :return))
+                           (t
+                            (incf count)
+                            (when (eq (suffix-of (car result-stack))
+                                      (suffix-of next-result))
+                              (error "Subparser in repetition parser didn't advance the input."))
+                            (push next-result result-stack)
+                            (push (funcall parser (suffix-of next-result)) continuation-stack)))))
+                (:check-count
+                   (cond ((or (null continuation-stack)
+                              (and (or (null min)
+                                       (>= count min))
+                                   (or (null max)
+                                       (<= count max))))
+                          (setf state :return))
+                         (t (pop result-stack)
+                          (setf state :next-result))))
+                (:return
+                  (if result-stack
+                      (let ((result
+                             (make-instance 'parser-possibility
+                                            :tree (map result-type #'tree-of (reverse result-stack))
+                                            :suffix (suffix-of (car result-stack)))))
+                        (pop result-stack)
+                        (return result))
+                      (return nil)))))))))
 
 (def-cached-parser word?
   "Parser: accept a string of alphabetic characters"
