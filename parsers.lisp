@@ -284,6 +284,12 @@
   (mdo (breadth? p nil nil nil)
        q))
 
+(defun find-after-collect? (p q &optional (result-type 'list))
+  "Parser: Find first q after some sequence of p. Return cons of list of p-results and q"
+  (mdo (<- prefix (breadth? p nil nil result-type))
+       (<- q-result q)
+       (result (cons prefix q-result))))
+
 (defun find? (q)
   "Parser: Find first q"
   (find-after? (item) q))

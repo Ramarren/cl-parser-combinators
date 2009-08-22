@@ -169,6 +169,34 @@
   (mdo (many* p)
        q))
 
+(defun find-after* (p q)
+  "Non-backtracking parser: Find first q after some sequence of p."
+  (define-oneshot-result inp is-unread
+    (iter (for p-result next (funcall (funcall p inp-prime)))
+          (for q-result next (funcall (funcall q inp-prime)))
+          (while (and p-result (null q-result)))
+          (for inp-prime initially inp then (suffix-of p-result))
+          (finally (return
+                     (when q-result
+                       (make-instance 'parser-possibility
+                                      :tree (tree-of q-result)
+                                      :suffix (suffix-of q-result))))))))
+
+(defun find-after-collect* (p q &optional (result-type 'list))
+  "Non-backtracking parser: Find first q after some sequence of p. Return cons of list of p-results and q"
+  (define-oneshot-result inp is-unread
+    (iter (for p-result next (funcall (funcall p inp-prime)))
+          (for q-result next (funcall (funcall q inp-prime)))
+          (while (and p-result (null q-result)))
+          (collect p-result into p-results)
+          (for inp-prime initially inp then (suffix-of p-result))
+          (finally (return
+                     (when q-result
+                       (make-instance 'parser-possibility
+                                      :tree (cons (map result-type #'tree-of p-results)
+                                                  (tree-of q-result))
+                                      :suffix (suffix-of q-result))))))))
+
 (defun find* (q)
   "Non-backtracking parser: Find first q"
   (find-after* (item) q))
