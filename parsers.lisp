@@ -50,10 +50,10 @@
         #'(lambda ()
             (setf state :next-result)
             (iter
-              (print state)
-              (print result-stack)
-              (print zero-width)
-              (print count)
+              ;; (print state)
+              ;; (print result-stack)
+              ;; (print zero-width)
+              ;; (print count)
               (while (or continuation-stack
                          zero-width))
               (ecase state
@@ -68,8 +68,9 @@
                             (setf state :return))
                            (t
                             (incf count)
-                            (when (eq (suffix-of (car result-stack))
-                                      (suffix-of next-result))
+                            (when (and result-stack
+                                       (eq (suffix-of (car result-stack))
+                                           (suffix-of next-result)))
                               (error "Subparser in repetition parser didn't advance the input."))
                             (push next-result result-stack)
                             (push (funcall parser (suffix-of next-result)) continuation-stack)))))
@@ -99,7 +100,7 @@
 
 (def-cached-parser word?
   "Parser: accept a string of alphabetic characters"
-  (between? (letter?) nil nil 'string))
+  (between? (letter?) 1 nil 'string))
 
 (defun many? (parser)
   "Parser: accept zero or more repetitions of expression accepted by parser"

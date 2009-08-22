@@ -36,8 +36,8 @@
   (" " ","))
 
 (defparsertest test-word? (word?)
-  ("abc" (list #\a #\b #\c) "   " nil "123" nil)
-  ())
+  ("abc" "abc" )
+  ("   " "123"))
 
 (defparsertest test-string? (string? (list #\a #\b #\c))
   ("abc" (list #\a #\b #\c))
