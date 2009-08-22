@@ -10,61 +10,51 @@
              (setf ,is-unread nil)
              ,@body))))))
 
-(defun many* (parser)
-  "Parser: collect as many of first result of parser as possible"
+(defun between* (parser min max &optional (result-type 'list))
+  "Non-backtracking parser: find the first, longest chain of expression accepted by parser of length between min and max"
+  (assert (or (null min)
+              (null max)
+              (>= max min)))
+  ;; min=zero or nil means accept zero width results
+  (assert (or (null min)
+              (zerop min)
+              (plusp min)))
+  ;; can't have 0-0 parser
+  (assert (or (null max)
+              (plusp max)))
   (define-oneshot-result inp is-unread
-    (let ((final-result (iter (for result next (funcall (funcall parser inp-prime)))
-                              (while result)
-                              (for inp-prime initially inp then (suffix-of result))
-                              (collect (tree-of result) into tree)
-                              (finally (return (list tree inp-prime))))))
-      (make-instance 'parser-possibility
-                     :tree (car final-result)
-                     :suffix (cadr final-result)))))
+    (iter (for count from 0)
+          (for result next (funcall (funcall parser inp-prime)))
+          (while (and result
+                      (or (null max)
+                          (< count max))))
+          (for inp-prime initially inp then (suffix-of result))
+          (collect result into results)
+          (finally (return
+                     (when (or (null min)
+                               (>= count min))
+                       (make-instance 'parser-possibility
+                                      :tree (map result-type #'tree-of results)
+                                      :suffix inp-prime)))))))
 
+(defun many* (parser)
+  "Non-backtracking parser: collect as many of first result of parser as possible"
+  (between* parser nil nil))
 
 (defun many1* (parser)
-  "Parser: accept as many as possible, and at least one, of parser"
-  (mdo (<- x parser)
-       (<- xs (many* parser))
-       (result (cons x xs))))
+  "Non-backtracking parser: accept as many as possible, and at least one, of parser"
+  (between* parser 1 nil))
 
 (defun atleast* (parser count)
-  "Parser: accept as many as possible and at least count of parser"
-  (if (zerop count)
-      (many* parser)
-      (define-oneshot-result inp is-unread
-        (let ((grab-result (funcall (funcall (many* parser) inp))))
-          (when (>= (length (tree-of grab-result)) count)
-            grab-result)))))
-
+  "Non-backtracking parser: accept as many as possible and at least count of parser"
+  (between* parser count nil))
 
 (defun atmost* (parser count)
-  "Parser: accept as many as possible but at most count of parser"
-  (define-oneshot-result inp is-unread
-    (let ((final-result (iter (for result next (funcall (funcall parser inp-prime)))
-                              (for i from 0)
-                              (while (and result (< i count)))
-                              (for inp-prime initially inp then (suffix-of result))
-                              (collect (tree-of result) into tree)
-                              (finally (return (list tree inp-prime))))))
-      (make-instance 'parser-possibility
-                     :tree (car final-result)
-                     :suffix (cadr final-result)))))
-
-(defun between* (parser min max)
-  "Parser: accept as many as possible but between min and max of parser"
-  (assert (>= max min))
-  (if (zerop min)
-      (atmost* parser max)
-      (define-oneshot-result inp is-unread
-        (let ((grab-result (funcall (funcall (atmost* parser max) inp))))
-          (when (>= (length (tree-of grab-result)) min)
-            grab-result)))))
-
+  "Non-backtracking parser: accept as many as possible but at most count of parser"
+  (between* parser nil count))
 
 (defun sepby1* (parser-item parser-separator)
-  "Parser: accept as many as possible of parser-item separated by parser-separator, but at least one."
+  "Non-backtracking parser: accept as many as possible of parser-item separated by parser-separator, but at least one."
   (mdo (<- x parser-item)
        (<- xs (many* (mdo parser-separator
                           (<- y parser-item)
@@ -72,12 +62,12 @@
        (result (cons x xs))))
 
 (defun sepby* (parser-item parser-separator)
-  "Parser: accept as many as possible of parser-item separated by parser-separator."
+  "Non-backtracking parser: accept as many as possible of parser-item separated by parser-separator."
   (choice1 (sepby1* parser-item parser-separator)
            (result nil)))
 
 (defun chainl1* (p op)
-  "Parser: accept as many as possible, but at least one of p, reduced by result of op with left associativity"
+  "Non-backtracking parser: accept as many as possible, but at least one of p, reduced by result of op with left associativity"
   (labels ((rest-chain (init-x)
              (define-oneshot-result inp is-unread
                (let ((final-result (iter (for f-result next (funcall (funcall op p-inp)))
@@ -100,7 +90,7 @@
     (bind p #'rest-chain)))
 
 (defun nat* ()
-  "Parser: accept natural number, consuming as many digits as possible"
+  "Non-backtracking parser: accept natural number, consuming as many digits as possible"
   (chainl1* (mdo (<- x (digit?))
                  (result (digit-char-p x)))
             (result
@@ -108,13 +98,13 @@
                  (+ (* 10 x) y)))))
 
 (defun int* ()
-  "Parser: accept integer, consuming as many digits as possible"
+  "Non-backtracking parser: accept integer, consuming as many digits as possible"
   (mdo (<- f (choice1 (mdo (char? #\-) (result #'-)) (result #'identity)))
        (<- n (nat*))
        (result (funcall f n))))
 
 (defun chainr1* (p op)
-  "Parser: accept as many as possible, but at least one of p, reduced by result of op with right associativity"
+  "Non-backtracking parser: accept as many as possible, but at least one of p, reduced by result of op with right associativity"
   (bind p
     #'(lambda (init-x)
         (define-oneshot-result inp is-unread
@@ -145,19 +135,19 @@
                                :tree init-x :suffix inp)))))))
 
 (defun chainl* (p op v)
-  "Parser: like chainl1*, but will return v if no p can be parsed"
+  "Non-backtracking parser: like chainl1*, but will return v if no p can be parsed"
   (choice1
    (chainl1* p op)
    (result v)))
 
 (defun chainr* (p op v)
-  "Parser: like chainr1*, but will return v if no p can be parsed"
+  "Non-backtracking parser: like chainr1*, but will return v if no p can be parsed"
   (choice1
    (chainr1* p op)
    (result v)))
 
 (def-cached-arg-parser string? (sequence)
-  "Parser: accept a sequence of EQL elements."
+  "Non-backtracking parser: accept a sequence of EQL elements."
   (let ((vector (coerce sequence 'vector)))
     (define-oneshot-result inp is-unread
       (iter (for c in-vector vector)
@@ -171,22 +161,14 @@
                                       :suffix (context-next inp))))))))
 
 (def-cached-arg-parser times* (parser count)
-    "Parser: accept exactly count expressions accepted by parser, without backtracking."
-    (define-oneshot-result inp is-unread
-      (iter (repeat count)
-            (for p-result next (funcall (funcall parser inp-prime)))
-            (for inp-prime initially inp then (suffix-of p-result))
-            (collect p-result into results)
-            (finally (return
-                       (make-instance 'parser-possibility
-                                      :tree (mapcar #'tree-of results)
-                                      :suffix (suffix-of p-result)))))))
+    "Non-backtracking parser: accept exactly count expressions accepted by parser, without backtracking."
+    (between* parser count count))
 
 (defun find-after* (p q)
-  "Parser: Find first q after some sequence of p."
+  "Non-backtracking parser: Find first q after some sequence of p."
   (mdo (many* p)
        q))
 
 (defun find* (q)
-  "Parser: Find first q"
+  "Non-backtracking parser: Find first q"
   (find-after* (item) q))
