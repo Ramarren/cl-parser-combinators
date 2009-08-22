@@ -57,12 +57,57 @@
       (result nil)
       (choice (mdo (<- x parser) (<- xs (atmost? parser (1- count))) (result (cons x xs))) (result nil))))
 
-(defun between? (parser min max)
+(defun between? (parser min max &optional (result-type 'list))
   "Parser: accept between min and max expressions accepted by parser"
-  (assert (>= max min))
-  (if (zerop min)
-      (atmost? parser max)
-      (mdo (<- x parser) (<- xs (between? parser (1- min) (1- max))) (result (cons x xs)))))
+  (assert (or (null min)
+              (null max)
+              (>= max min)))
+  (assert (or (null min)
+              (plusp min)))
+  (assert (or (null max)
+              (plusp max)))
+  ;; gather results depth-first, longest first, ie. gather shorter on returning
+  #'(lambda (inp)
+      (let ((continuation-stack nil)
+            (result-stack nil)
+            (count 1)
+            (state :next-result))
+        (push (funcall parser inp) continuation-stack)
+        #'(lambda ()
+            (setf state :next-result)
+            (iter (ecase state
+                    (:next-result
+                       (let ((next-result (funcall (car continuation-stack))))
+                         (cond ((null next-result)
+                                (pop continuation-stack)
+                                (decf count)
+                                (setf state :check-count))
+                               ((and max (= count max))
+                                (push next-result result-stack)
+                                (setf state :return))
+                               (t
+                                (incf count)
+                                (push next-result result-stack)
+                                (push (funcall parser (suffix-of next-result)) continuation-stack)))))
+                    (:check-count
+                       (cond ((or (null continuation-stack)
+                                  (and (or (null min)
+                                           (>= count min))
+                                       (or (null max)
+                                           (<= count max))))
+                              (setf state :return))
+                             (t (pop result-stack)
+                              (setf state :next-result))))
+                    (:return
+                      (if result-stack
+                          (let ((result
+                                 (make-instance 'parser-possibility
+                                                :tree (map result-type #'tree-of (reverse result-stack))
+                                                :suffix (suffix-of (car result-stack)))))
+                            (pop result-stack)
+                            (return result))
+                          (return nil)))))))))
+
 
 (defun int? ()
   "Parser: accept and integer"
