@@ -231,9 +231,57 @@
    (chainr1? p op)
    (result v)))
 
+(defclass result-node (parser-possibility)
+  ((emit :initarg :emit :initform t :accessor emit-of)
+   (up :initarg :up :initform nil :accessor up-of)
+   (count :initarg :count :initform 0 :accessor count-of)
+   (suffix-continuation :initarg :suffix-continuation :accessor suffix-continuation-of)))
+
+(defun gather-nodes (node)
+  (let ((nodes))
+    (iter (for current-node initially node then (up-of current-node))
+          (while current-node)
+          (when (emit-of current-node)
+           (push current-node nodes))
+          (finally (return nodes)))))
+
+(defun breadth? (parser min max &optional (result-type 'list))
+  "Parser: like between? but breadth first (shortest matches first)"
+  #'(lambda (inp)
+      (let ((queue (make-queue (list
+                                (make-instance 'result-node
+                                               :suffix inp
+                                               :suffix-continuation (funcall parser inp)
+                                               :tree nil
+                                               :emit nil
+                                               :up nil))))
+            (node nil))
+        #'(lambda ()
+            (iter
+              (until (empty-p queue))
+              (setf node (pop-front queue))
+              (for count = (count-of node))
+              (iter (for result next (funcall (suffix-continuation-of node)))
+                    (while result)
+                    (for suffix = (suffix-of result))
+                    (push-back queue (make-instance 'result-node
+                                                    :suffix suffix
+                                                    :suffix-continuation (funcall parser suffix)
+                                                    :up node
+                                                    :count (1+ count)
+                                                    :tree (tree-of result))))
+              (when (and (emit-of node)
+                         (or (null min)
+                             (>= count min))
+                         (or (null max)
+                             (<= count max)))
+                (return (make-instance 'parser-possibility
+                                       :tree (map result-type #'tree-of (gather-nodes node))
+                                       :suffix (suffix-of node)))))))))
+
 (defun find-after? (p q)
   "Parser: Find first q after some sequence of p."
-  (mdo (between? p nil nil nil)
+  (mdo (breadth? p nil nil nil)
        q))
 
 (defun find? (q)

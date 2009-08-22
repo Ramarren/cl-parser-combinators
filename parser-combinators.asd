@@ -6,6 +6,7 @@
   :licence "BSD-style"
   :depends-on (:iterate :alexandria :bpm)
   :components ((:file "package")
+               (:file "queue" :depends-on ("package"))
                (:file "contexts" :depends-on ("package"))
                (:file "lazy" :depends-on ("package"))
                (:file "basic" :depends-on ("package" "lazy"))
