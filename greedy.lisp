@@ -182,16 +182,11 @@
                                       :tree (mapcar #'tree-of results)
                                       :suffix (suffix-of p-result)))))))
 
-(defun find-after? (p q)
+(defun find-after* (p q)
   "Parser: Find first q after some sequence of p."
-  (define-oneshot-result inp is-unread
-    (iter (for q-result next (funcall (funcall q inp-prime)))
-          (until q-result)
-          (for p-result next (funcall (funcall p inp-prime)))
-          (while p-result)
-          (for inp-prime initially inp then (suffix-of p-result))
-          (finally (return (if q-result q-result nil))))))
+  (mdo (many* p)
+       q))
 
-(defun find? (q)
+(defun find* (q)
   "Parser: Find first q"
-  (find-after? (item) q))
+  (find-after* (item) q))

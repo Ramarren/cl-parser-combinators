@@ -230,3 +230,12 @@
   (choice
    (chainr1? p op)
    (result v)))
+
+(defun find-after? (p q)
+  "Parser: Find first q after some sequence of p."
+  (mdo (between? p nil nil nil)
+       q))
+
+(defun find? (q)
+  "Parser: Find first q"
+  (find-after? (item) q))
