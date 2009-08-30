@@ -10,6 +10,6 @@
           (let ((new-result (if result-p
                                 (copy-parse-result result)
                                 (copy-parse-result (setf (gethash inp memo-table)
-                                                         (funcall parser inp))))))
+                                                         (make-parse-result (funcall parser inp)))))))
             #'(lambda ()
                 (next-result new-result)))))))

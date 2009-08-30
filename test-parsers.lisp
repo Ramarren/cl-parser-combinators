@@ -140,3 +140,10 @@
 (defparsertest test-int* (int*)
   ("5" 5 "12" 12 "145" 145 "-56" -56)
   ("a" "b" " "))
+
+(deftest test-memo ()
+  (is (equal '(("12" "3") ("12") ("1" "23") ("1" "2" "3") ("1" "2") ("1") NIL)
+             (mapcar #'tree-of
+                     (gather-results
+                      (parse-string (many? (between? (memoize? (digit?)) 1 2 'string))
+                                    "123"))))))
