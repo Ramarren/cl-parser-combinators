@@ -41,6 +41,17 @@
   (is (equal '(+ 1 (* 2 (- 3)))
              (tree-of (current-result (parse-string (expr-arith*) "1+2*-3"))))))
 
+(deftest test-expr3 ()
+  (is (equal '(* (+ 1 2) 3)
+             (tree-of (current-result (parse-string (expr-arith?) "(1+2)*3")))))
+  (is (equal '(* (+ 1 2) 3)
+             (tree-of (current-result (parse-string (expr-arith*) "(1+2)*3")))))
+  (is (equal '(* 1 (+ 2 3))
+             (tree-of (current-result (parse-string (expr-arith?) "1*(2+3)")))))
+  (is (equal '(* 1 (+ 2 3))
+             (tree-of (current-result (parse-string (expr-arith*) "1*(2+3)"))))))
+
+
 (deftest test-random-expr-arith ()
   (iter (repeat 100)
         (let ((arith-string (make-random-arith-string 100)))
