@@ -167,7 +167,8 @@
                               (setf chain next-chain
                                     state :return)
                               (setf between-continuation nil
-                                    chain nil)))
+                                    chain nil
+                                    state :return)))
                            (front-continuation
                             (if-let (next-front (funcall front-continuation))
                               (setf front next-front
