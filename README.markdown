@@ -46,7 +46,7 @@ This are the building blocks for most parsers. It is also possible to construct 
 
 ### basic parsers
 
-There is a number of predefined parsers in `parsers.lisp` and `greedy.lisp`. They are documented by their docstrings.
+There is a number of predefined parsers in `parsers.lisp` and `greedy.lisp`. They are documented by their docstrings. Non-backtrakcing parsers, indicated by star replacing the question mark in their names, discard all but the first result. This decreases memory consumption since backtracking information is not kept, but may lead to parser failures if there is ambiguity which can only be resolved from higher context.
 
 ### top-level interface
 
@@ -56,4 +56,4 @@ The results are `parser-possibility` objects. Accessor `tree-of` will access the
 
 ### example
 
-`test-arithmetic.lisp` contains an obligatory four expression infix arithmetic example. On my system it can parse 100000 nodes long randomly generated string in less than two seconds, but the grammar is very simple. It would be in principle possible to do fully general precedence disambiguation, but I did not.
+`test-arithmetic.lisp` contains an obligatory four expression infix arithmetic example. On my system it can parse 100000 nodes long randomly generated string in less than two seconds with rather simple grammar. In `test-expression.lisp` there is an example of a arithmetic parser using generalized expression parser, with precedence and subexpressions.
