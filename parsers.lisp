@@ -265,17 +265,17 @@
               (iter (for result next (funcall (suffix-continuation-of node)))
                     (while result)
                     (for suffix = (suffix-of result))
-                    (push-back queue (make-instance 'result-node
-                                                    :suffix suffix
-                                                    :suffix-continuation (funcall parser suffix)
-                                                    :up node
-                                                    :count (1+ count)
-                                                    :tree (tree-of result))))
+                    (unless (and max
+                                 (= count max))
+                      (push-back queue (make-instance 'result-node
+                                                      :suffix suffix
+                                                      :suffix-continuation (funcall parser suffix)
+                                                      :up node
+                                                      :count (1+ count)
+                                                      :tree (tree-of result)))))
               (when (and (emit-of node)
                          (or (null min)
-                             (>= count min))
-                         (or (null max)
-                             (<= count max)))
+                             (>= count min)))
                 (return (make-instance 'parser-possibility
                                        :tree (map result-type #'tree-of (gather-nodes node))
                                        :suffix (suffix-of node)))))))))
