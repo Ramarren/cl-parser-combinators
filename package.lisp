@@ -67,4 +67,5 @@
            #:find-after-collect?
            #:find-after-collect*
            #:breadth?
-           #:expression?))
+           #:expression?
+           #:expression*))
