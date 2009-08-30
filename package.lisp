@@ -66,4 +66,5 @@
            #:sepby1-cons?
            #:find-after-collect?
            #:find-after-collect*
-           #:breadth?))
+           #:breadth?
+           #:expression?))
