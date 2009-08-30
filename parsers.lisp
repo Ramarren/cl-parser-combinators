@@ -314,6 +314,6 @@
                                         base))))
                    (finally (return base)))))
         (when (and bracket-left bracket-right)
-          (setf wrapped-term (choice (bracket? bracket-left #'term-wrapper bracket-right)
+          (setf wrapped-term (choice (bracket? bracket-left expr-parser bracket-right)
                                      term)))
         expr-parser))))
