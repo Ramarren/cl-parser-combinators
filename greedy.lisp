@@ -166,11 +166,6 @@
 
 (defun find-after* (p q)
   "Non-backtracking parser: Find first q after some sequence of p."
-  (mdo (many* p)
-       q))
-
-(defun find-after* (p q)
-  "Non-backtracking parser: Find first q after some sequence of p."
   (define-oneshot-result inp is-unread
     (iter (for p-result next (funcall (funcall p inp-prime)))
           (for q-result next (funcall (funcall q inp-prime)))
