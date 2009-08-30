@@ -298,19 +298,22 @@
   "Parser: Reduce a sequence of terms with unary/binary operators with precedence.
  OPERATORS is a list of (op-parser :left/:right/:unary), where OP-PARSER is a parser consuming
  an operator and returning a reduction function. Highest precedence first."
-  (let ((wrapped-term term)
-        (ops (cons nil (reverse operators))))
+  (let ((wrapped-term term))
     (labels ((term-wrapper (inp)
                (funcall wrapped-term inp)))
       (let ((expr-parser
-             (iter (for (op assoc) in ops)
+             (iter (for (op assoc) in operators)
                    (for base initially #'term-wrapper
                         then (ecase assoc
                                (:left (chainl1? base op))
                                (:right (chainr1? base op))
-                               (:unary (mdo op base))))
+                               (:unary (choice
+                                        (mdo (<- op-fun op)
+                                             (<- subexpr base)
+                                             (result (funcall op-fun subexpr)))
+                                        base))))
                    (finally (return base)))))
         (when (and bracket-left bracket-right)
           (setf wrapped-term (choice (bracket? bracket-left #'term-wrapper bracket-right)
-                                     #'term-wrapper)))
+                                     term)))
         expr-parser))))
