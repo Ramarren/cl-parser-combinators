@@ -26,5 +26,27 @@
                (char? #\))))
 
 (deftest test-expr1 ()
+  (is (equal '(* 1 2)
+             (tree-of (current-result (parse-string (expr-arith?) "1*2")))))
+  (is (equal '(* 1 2)
+             (tree-of (current-result (parse-string (expr-arith*) "1*2")))))
   (is (equal '(+ 1 (* 2 3))
-             (tree-of (current-result (parse-string (expr-arith?) "1+2*3"))))))
+             (tree-of (current-result (parse-string (expr-arith?) "1+2*3")))))
+  (is (equal '(+ 1 (* 2 3))
+             (tree-of (current-result (parse-string (expr-arith*) "1+2*3"))))))
+
+(deftest test-expr2 ()
+  (is (equal '(+ 1 (* 2 (- 3)))
+             (tree-of (current-result (parse-string (expr-arith?) "1+2*-3")))))
+  (is (equal '(+ 1 (* 2 (- 3)))
+             (tree-of (current-result (parse-string (expr-arith*) "1+2*-3"))))))
+
+(deftest test-random-expr-arith ()
+  (iter (repeat 100)
+        (let ((arith-string (make-random-arith-string 100)))
+          (is (handler-case
+                  (= (eval (infix:string->prefix arith-string))
+                     (eval (collapse-ops (tree-of (current-result (parse-string (expr-arith*) arith-string))))))
+                (division-by-zero ()
+                  (print 'division-by-zero)
+                  t))))))

@@ -70,13 +70,13 @@
     (is (equal (print (infix:string->prefix arith-string))
                (print (collapse-ops (tree-of (current-result (parse-string (arith*) arith-string)))))))))
 
-(defun measure-time (min-size max-size step)
+(defun measure-time (min-size max-size step &optional (parser (arith*)))
   (iter (for i from min-size to max-size by step)
         (print i)
         (for arith-string = (make-random-arith-string i))
         (sb-ext:gc :full t)
         (for start-time = (get-internal-real-time))
-        (current-result (parse-string (arith*) arith-string))
+        (current-result (parse-string parser arith-string))
         (collect (list i
                        (/ (- (get-internal-real-time) start-time)
                           internal-time-units-per-second)))))
