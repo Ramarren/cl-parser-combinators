@@ -16,6 +16,6 @@
                                  (funcall parser inp)))))
                        (t
                         (setf (gethash inp curtail-table)
-                              (cons 1 (length-of inp)))
+                              (cons 1 (- (length-of inp) (position-of inp))))
                         (funcall parser inp))))))
       #'curtailed)))
