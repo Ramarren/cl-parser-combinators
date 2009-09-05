@@ -71,18 +71,10 @@
   "Combinator: one alternative from two parsers"
   `(let ((parser1 ,parser1)
          (parser2 ,parser2))
-     #'(lambda (inp)
-         (let ((parser1 parser1)
-               (parser2 parser2)
-               (is-unread t))
-           #'(lambda ()
-               (when is-unread
-                 (setf is-unread nil)
-                 (let ((result (funcall (execute-choice inp
-                                                        parser1
-                                                        parser2))))
-                   (setf parser1 nil parser2 nil)
-                   result)))))))
+     (define-oneshot-result inp is-unread
+       (funcall (execute-choice inp
+                                parser1
+                                parser2)))))
 
 (defmacro choices (&rest parser-list)
   "Combinator: all alternatives from multiple parsers"
@@ -94,13 +86,8 @@
 (defmacro choices1 (&rest parser-list)
   "Combinator: one alternative from multiple parsers"
   `(let ((parser-list (list ,@parser-list)))
-     #'(lambda (inp)
-         (let ((parser-list parser-list)
-               (is-unread t))
-           #'(lambda ()
-               (when is-unread
-                 (setf is-unread t)
-                 (iter (for p in parser-list)
-                       (for result = (funcall (funcall p inp)))
-                       (finding result)
-                       (finally (setf parser-list nil)))))))))
+     (define-oneshot-result inp is-unread
+       (iter (for p in parser-list)
+             (for result = (funcall (funcall p inp)))
+             (finding result)
+             (finally (setf parser-list nil))))))
