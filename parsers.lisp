@@ -1,5 +1,10 @@
 (in-package :parser-combinators)
 
+(def-cached-parser context?
+  "Parser: return current context without consuming any input"
+  (define-oneshot-result inp is-unread
+    (make-instance 'parser-possibility :tree inp :suffix (suffix-of inp))))
+
 (def-cached-arg-parser char? (character)
   "Parser: accept token eql to argument"
   (sat (curry #'eql character)))

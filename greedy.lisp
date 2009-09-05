@@ -2,14 +2,6 @@
 
 ;;; greedy version of repetition combinators
 
-(defmacro define-oneshot-result (inp is-unread &body body)
-  `(function (lambda (,inp)
-     (let ((,is-unread t))
-       #'(lambda ()
-           (when ,is-unread
-             (setf ,is-unread nil)
-             ,@body))))))
-
 (defun between* (parser min max &optional (result-type 'list))
   "Non-backtracking parser: find the first, longest chain of expression accepted by parser of length between min and max"
   (assert (or (null min)
