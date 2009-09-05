@@ -68,4 +68,5 @@
            #:find-after-collect*
            #:breadth?
            #:expression?
-           #:expression*))
+           #:expression*
+           #:context-interval))
