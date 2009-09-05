@@ -3,7 +3,7 @@
 (def-cached-parser context?
   "Parser: return current context without consuming any input"
   (define-oneshot-result inp is-unread
-    (make-instance 'parser-possibility :tree inp :suffix (suffix-of inp))))
+    (make-instance 'parser-possibility :tree inp :suffix inp)))
 
 (def-cached-arg-parser char? (character)
   "Parser: accept token eql to argument"

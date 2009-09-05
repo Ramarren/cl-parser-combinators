@@ -69,4 +69,5 @@
            #:breadth?
            #:expression?
            #:expression*
-           #:context-interval))
+           #:context-interval
+           #:context?))

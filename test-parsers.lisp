@@ -147,3 +147,19 @@
                      (gather-results
                       (parse-string (many? (between? (memoize? (digit?)) 1 2 'string))
                                     "123"))))))
+
+(deftest test-context ()
+  (is (equal "1234"
+             (tree-of (current-result
+                       (parse-string (mdo (<- c1 (context?))
+                                          (many* (digit?))
+                                          (<- c2 (context?))
+                                          (result (context-interval c1 c2)))
+                                     "1234abc")))))
+  (is (equal "1234"
+             (tree-of (current-result
+                       (parse-string (mdo (<- c1 (context?))
+                                          (many* (digit?))
+                                          (<- c2 (context?))
+                                          (result (context-interval c1 c2)))
+                                     "1234"))))))
