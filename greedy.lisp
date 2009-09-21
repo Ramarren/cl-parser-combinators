@@ -150,7 +150,7 @@
             (finally (return
                        (make-instance 'parser-possibility
                                       :tree (copy-seq sequence)
-                                      :suffix (context-next inp))))))))
+                                      :suffix inp-iter)))))))
 
 (def-cached-arg-parser times* (parser count)
     "Non-backtracking parser: accept exactly count expressions accepted by parser, without backtracking."
