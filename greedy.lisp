@@ -144,6 +144,8 @@
     (define-oneshot-result inp is-unread
       (iter (for c in-vector vector)
             (for inp-iter initially inp then (context-next inp-iter))
+            (when (typep inp-iter 'end-context)
+              (return nil))
             (for inp-data = (context-peek inp-iter))
             (unless (eql c inp-data)
               (return nil))
