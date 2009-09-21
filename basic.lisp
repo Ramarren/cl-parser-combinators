@@ -79,6 +79,11 @@
 ;;; simple, no let
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  #+sbcl(when (string< (lisp-implementation-version) "1.0.31")
+          (removef bpm::*prettify-output-transformations*
+                   'bpm.prettify::.declare-dynamic-gensyms)
+          (removef bpm::*prettify-output-transformations*
+                   'bpm.prettify::.declare-initial-gensym))
   (defun do-notation (monad-sequence bind ignore-gensym)
     (match monad-sequence
       ((_monad . nil)
