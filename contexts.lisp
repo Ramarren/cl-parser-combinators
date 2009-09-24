@@ -102,7 +102,7 @@
 (defun make-cache (cache-type length)
   (ecase cache-type
     ((nil) nil)
-    (:vector (make-array length))
+    (:vector (make-array length :initial-element nil))
     (:hashtable (make-hash-table))))
 
 (defgeneric make-context (sequence &optional cache-type))
