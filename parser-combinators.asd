@@ -4,7 +4,7 @@
   :maintainer "Jakub Higersberger <ramarren@gmail.com>"
   :author "Jakub Higersberger <ramarren@gmail.com>"
   :licence "BSD-style"
-  :depends-on (:iterate :alexandria :bpm)
+  :depends-on (:iterate :alexandria)
   :components ((:file "package")
                (:file "queue" :depends-on ("package"))
                (:file "contexts" :depends-on ("package"))

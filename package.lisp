@@ -1,5 +1,5 @@
 (defpackage :parser-combinators
-    (:use :cl :iterate :alexandria :bpm)
+    (:use :cl :iterate :alexandria)
   (:export #:result
            #:zero
            #:item

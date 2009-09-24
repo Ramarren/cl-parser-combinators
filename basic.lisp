@@ -79,47 +79,27 @@
 ;;; simple, no let
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  #+sbcl(when (string< (lisp-implementation-version) "1.0.31")
-          (removef bpm::*prettify-output-transformations*
-                   'bpm.prettify::.declare-dynamic-gensyms)
-          (removef bpm::*prettify-output-transformations*
-                   'bpm.prettify::.declare-initial-gensym))
   (defun do-notation (monad-sequence bind ignore-gensym)
-    (match monad-sequence
-      ((_monad . nil)
-       _monad)
-      (((<- _name _monad) . _)
-       `(,bind ,_monad
-               #'(lambda (,_name)
-                   ,(do-notation (cdr monad-sequence) bind ignore-gensym))))
-      ((_monad . _)
-       `(,bind ,_monad
-               #'(lambda (,ignore-gensym)
-                   (declare (ignore ,ignore-gensym))
-                   ,(do-notation (cdr monad-sequence) bind ignore-gensym)))))))
+    (destructuring-bind (monad . rest) monad-sequence
+      (cond ((endp rest)
+             monad)
+            ((and (listp monad)
+                  (eql (car monad) '<-))
+             (destructuring-bind (<- name monad) monad
+               (declare (ignore <-))
+               `(,bind ,monad
+                       #'(lambda (,name)
+                           ,(do-notation rest bind ignore-gensym)))))
+            (t
+             `(,bind ,monad
+                     #'(lambda (,ignore-gensym)
+                         (declare (ignore ,ignore-gensym))
+                         ,(do-notation rest bind ignore-gensym))))))))
 
 (defmacro mdo (&body spec)
   "Combinator: use do-like notation to sequentially link parsers. (<- name parser) allows capturing of return values."
   (with-unique-names (ignore-gensym)
     (do-notation spec 'bind ignore-gensym)))
-
-(defmacro def-pattern-parser (name &body parser-patterns)
-  (with-unique-names (parameter)
-    `(defun ,name (,parameter)
-       (match ,parameter
-         ,@(iter (for spec in parser-patterns)
-                 (collect
-                     (match spec
-                       ((_pattern (where _guard) . _spec)
-                        (list* _pattern (where _guard) _spec))
-                       ((_pattern (where-not _guard) . _spec)
-                        (list* _pattern (where-not _guard) _spec))
-                       ((_pattern . _spec)
-                        (list* _pattern _spec))
-                       (_ (error "Error when constructing parser ~a" name)))))))))
-
-(def-pattern-parser psat
-  (_predicate (mdo (<- x (item)) (if (funcall _predicate x) (result x) (zero)))))
 
 (defparameter *curtail-table* (make-hash-table))
 (defparameter *memo-table* (make-hash-table))
