@@ -6,7 +6,7 @@
     (setf (gethash label *curtail-table*) (make-hash-table)))
   (let ((curtail-table (gethash label *curtail-table*)))
     (labels ((curtailed (inp)
-               (multiple-value-bind (counter counter-p) (gethash inp curtail-table)
+               (multiple-value-bind (counter counter-p) (gethash (position-of inp) curtail-table)
                  (cond (counter-p
                         (destructuring-bind (c . l) counter
                           (cond ((>= c (1+ l))
@@ -15,7 +15,7 @@
                                  (incf (car counter))
                                  (funcall parser inp)))))
                        (t
-                        (setf (gethash inp curtail-table)
+                        (setf (gethash (position-of inp) curtail-table)
                               (cons 1 (- (length-of inp) (position-of inp))))
                         (funcall parser inp))))))
       #'curtailed)))
