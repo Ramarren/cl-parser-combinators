@@ -25,7 +25,7 @@
 
 (defgeneric context-next (context))
 
-(defmethod context-next :around (context)
+(defmethod context-next :around ((context context))
   (let ((cache (cache-of context)))
     (etypecase cache
       (null (call-next-method))
