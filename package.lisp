@@ -72,4 +72,6 @@
            #:context-interval
            #:context?
            #:end-context-p
+           #:context-equal
+           #:*default-context-cache*
            #:context-equal))
