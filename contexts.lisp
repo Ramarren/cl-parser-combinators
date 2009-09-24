@@ -23,6 +23,12 @@
 (defclass end-context (context)
   ())
 
+(defgeneric end-context-p (context)
+  (:method ((context t))
+    nil)
+  (:method ((context end-context))
+    t))
+
 (defmethod context-next ((context end-context))
   (error "Can't go past the end"))
 

@@ -70,4 +70,5 @@
            #:expression?
            #:expression*
            #:context-interval
-           #:context?))
+           #:context?
+           #:end-context-p))
