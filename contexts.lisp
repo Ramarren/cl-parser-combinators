@@ -37,7 +37,7 @@
                             (call-next-method)))))))
 
 (defgeneric context-equal (context1 context2)
-  (:method ((context1 list-context) (context2 list-context))
+  (:method ((context1 context) (context2 context))
     (or (eq context1 context2)
         (and (eq (sequence-id-of context1)
                  (sequence-id-of context2))
