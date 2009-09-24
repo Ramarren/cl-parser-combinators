@@ -71,4 +71,5 @@
            #:expression*
            #:context-interval
            #:context?
-           #:end-context-p))
+           #:end-context-p
+           #:context-equal))

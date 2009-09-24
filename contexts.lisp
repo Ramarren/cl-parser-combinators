@@ -8,8 +8,19 @@
    (length   :accessor length-of   :initarg :length :initform 0)))
 
 (defgeneric context-peek (context))
+
 (defgeneric context-next (context))
+
+(defgeneric context-equal (context1 context2)
+  (:method ((context1 list-context) (context2 list-context))
+    (or (eq context1 context2)
+        (and (eq (sequence-id-of context1)
+                 (sequence-id-of context2))
+             (eql (position-of context1)
+                  (position-of context2))))))
+
 (defgeneric make-context (sequence))
+
 (defgeneric context-interval (context1 context2 &optional result-type)
   (:method ((context1 context) (context2 context) &optional (result-type 'string))
     (assert (eql (sequence-id-of context1)
