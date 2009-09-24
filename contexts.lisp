@@ -1,7 +1,8 @@
 (in-package :parser-combinators)
 
 (defclass context ()
-  ((cache    :accessor cache-of    :initarg :cache :initform (make-hash-table))
+  ((sequence-id :accessor sequence-id-of :initarg :sequence-id :initform (gensym))
+   (cache    :accessor cache-of    :initarg :cache :initform (make-hash-table))
    (storage  :accessor storage-of  :initarg :storage :initform nil)
    (position :accessor position-of :initarg :position :initform 0)
    (length   :accessor length-of   :initarg :length :initform 0)))
@@ -11,6 +12,8 @@
 (defgeneric make-context (sequence))
 (defgeneric context-interval (context1 context2 &optional result-type)
   (:method ((context1 context) (context2 context) &optional (result-type 'string))
+    (assert (eql (sequence-id-of context1)
+                 (sequence-id-of context2)))
     (assert (<= (position-of context1)
                 (position-of context2)))
     (if (= (position-of context1) (position-of context2))
@@ -45,18 +48,21 @@
       (make-instance 'list-context :storage list :length (length list))))
 
 (defmethod context-next ((context list-context))
-  (with-accessors ((cache cache-of) (storage storage-of) (position position-of) (length length-of))
+  (with-accessors ((cache cache-of) (storage storage-of) (position position-of)
+                   (length length-of) (sequence-id sequence-id-of))
       context
     (let ((new-position (1+ position)))
       (or (gethash new-position cache)
           (setf (gethash new-position cache)
                 (if (= new-position length)
                     (make-instance 'end-context
+                                   :sequence-id sequence-id
                                    :position new-position
                                    :length length
                                    :cache cache
                                    :storage nil)
                     (make-instance 'list-context
+                                   :sequence-id sequence-id
                                    :storage (cdr storage)
                                    :position new-position
                                    :length length
@@ -71,7 +77,7 @@
 (defmethod make-context ((vector vector))
   (if (zerop (length vector))
       (make-instance 'end-context)
-      (make-instance 'vector-context :storage vector :length (length vector))))
+      (make-instance 'vector-context :storage vector :length (length vector) :sequence-id vector)))
 
 (defmethod context-next ((context vector-context))
   (with-accessors ((cache cache-of) (storage storage-of) (position position-of) (length length-of))
@@ -81,11 +87,13 @@
           (setf (gethash new-position cache)
                 (if (= new-position length)
                     (make-instance 'end-context
+                                   :sequence-id storage
                                    :position new-position
                                    :length length
                                    :cache cache
                                    :storage nil)
                     (make-instance 'vector-context
+                                   :sequence-id storage
                                    :storage storage
                                    :position new-position
                                    :length length
