@@ -74,4 +74,8 @@
            #:end-context-p
            #:context-equal
            #:*default-context-cache*
-           #:context-equal))
+           #:context-equal
+           #:find-after?
+           #:find-after*
+           #:find*
+           #:find?))
