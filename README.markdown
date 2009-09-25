@@ -4,6 +4,8 @@ This is an experimental implementation of [parser combinators](http://en.wikiped
 
 It more or less works, but was not tested for any but the simplest cases, some parts of the interface are clunky, it is quite slow in general and probably has a tendency for exponential explosions. That said, it could probably be used to parse small amounts of data, especially if applied hierarchically. Comments welcome.
 
+I have found this more convenient than regular expressions in some cases, especially where maximum performace is not required.
+
 # Usage
 
 Parsers combinators combine parsers. In the specific context of this library a parser is a function from `context` object to a thunk returning `parser-possibility` objects or `nil`, if there are no more possible parses. This parsers can be combined using parser combinators to create more complex parsers.
@@ -23,6 +25,10 @@ This are the building blocks for most parsers. It is also possible to construct 
 `(result v)` is a parser generator for a parser which doesn't modify the input and returns `v`
 
 `(item)` is a parser generator for a parser which consumes and returns one item from the input
+
+### automatic parsers
+
+Most places which expect a parser will also accept any non-function object (a function object will be treated as a parser). Sequences are matched against the input element by element with `eql`, and atoms are matched themselves.
 
 ### primitive combinators
 
@@ -52,7 +58,7 @@ There is a number of predefined parsers in `parsers.lisp` and `greedy.lisp`. The
 
 `parse-string parser string` will parse a string using parser, and return a `parse-result` object. From that object results can be retrieved using `current-result`, `next-result`, `nth-result`, `gather-results`. Note that for a fresh objects `current-result` and `next-result` are equivalent. `gather-results` will return remaining results. `copy-parse-result` will return a `parse-result` object with reset result list, ie. `next-result` will return first result. Note that due to laziness results will be computed only as needed.
 
-The results are `parser-possibility` objects. Accessor `tree-of` will access the actual result, and `suffix-of` the remaining input context, of type `end-context` if an entire input was parsed.
+The results are `parser-possibility` objects. Accessor `tree-of` will access the actual result, and `suffix-of` the remaining input context, of type `end-context` if an entire input was parsed. Function `end-context-p` will check if a context is an `end-context`.
 
 ### example
 
