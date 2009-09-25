@@ -71,24 +71,6 @@
                        closure-value
                      (setf closure-value nil)))))))))
 
-(declaim (inline sat))
-(def-cached-arg-parser sat (predicate)
-  "Parser: return a token satisfying a predicate."
-  #'(lambda (inp)
-      (typecase inp
-        (end-context (constantly nil))
-        (context
-           (if (funcall predicate (context-peek inp))
-               (let ((closure-value
-                      (make-instance 'parser-possibility
-                                     :tree (context-peek inp) :suffix (context-next inp))))
-                 #'(lambda ()
-                     (when closure-value
-                       (prog1
-                           closure-value
-                         (setf closure-value nil)))))
-               (constantly nil))))))
-
 (defun force? (parser)
   "Parser modifier: fully realize result from parser"
   #'(lambda (inp)

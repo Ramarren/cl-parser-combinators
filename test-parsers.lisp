@@ -163,3 +163,9 @@
                                           (<- c2 (context?))
                                           (result (context-interval c1 c2)))
                                      "1234"))))))
+
+(defparsertest test-mdo-constants (mdo (times? "ab" 2)
+                                       #\c
+                                       "defg")
+  ("ababcdefg" "defg")
+  ("ababccdefg"))

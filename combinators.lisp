@@ -15,24 +15,25 @@
 ;;; (bind p f inp)=(concat list-comprehension)
 
 (defun execute-bind (inp parser parser-generator) ;return continuation function
-  (let ((p-parse-continuation (funcall parser inp))
-        (q-parse-continuation nil))
-    #'(lambda ()
-        (let ((result nil))
-          (iter (when q-parse-continuation (setf result (funcall q-parse-continuation)))
-                (until (or result
-                           (and (null p-parse-continuation)
-                                (null q-parse-continuation))))
-                (unless result
-                  (setf q-parse-continuation
-                        (let ((p-next-result
-                               (funcall p-parse-continuation)))
-                          (if p-next-result
-                              (let ((v (tree-of p-next-result))
-                                    (inp-prime (suffix-of p-next-result)))
-                                (funcall (funcall parser-generator v) inp-prime))
-                              (setf p-parse-continuation nil))))))
-          result))))
+  (with-parsers (parser)
+    (let ((p-parse-continuation (funcall parser inp))
+          (q-parse-continuation nil))
+      #'(lambda ()
+          (let ((result nil))
+            (iter (when q-parse-continuation (setf result (funcall q-parse-continuation)))
+                  (until (or result
+                             (and (null p-parse-continuation)
+                                  (null q-parse-continuation))))
+                  (unless result
+                    (setf q-parse-continuation
+                          (let ((p-next-result
+                                 (funcall p-parse-continuation)))
+                            (if p-next-result
+                                (let ((v (tree-of p-next-result))
+                                      (inp-prime (suffix-of p-next-result)))
+                                  (funcall (ensure-parser (funcall parser-generator v)) inp-prime))
+                                (setf p-parse-continuation nil))))))
+            result)))))
 
 (defmacro bind (parser parser-generator) ; results in parser-promise
   `(let ((parser ,parser)
@@ -62,15 +63,15 @@
 
 (defmacro choice (parser1 parser2)
   "Combinator: all alternatives from two parsers"
-  `(let ((parser1 ,parser1)
-         (parser2 ,parser2))
+  `(let ((parser1 (ensure-parser ,parser1))
+         (parser2 (ensure-parser ,parser2)))
      #'(lambda (inp)
          (execute-choice inp parser1 parser2))))
 
 (defmacro choice1 (parser1 parser2)
   "Combinator: one alternative from two parsers"
-  `(let ((parser1 ,parser1)
-         (parser2 ,parser2))
+  `(let ((parser1 (ensure-parser ,parser1))
+         (parser2 (ensure-parser ,parser2)))
      (define-oneshot-result inp is-unread
        (funcall (execute-choice inp
                                 parser1
@@ -88,6 +89,6 @@
   `(let ((parser-list (list ,@parser-list)))
      (define-oneshot-result inp is-unread
        (iter (for p in parser-list)
-             (for result = (funcall (funcall p inp)))
+             (for result = (funcall (funcall (ensure-parser p) inp)))
              (finding result)
              (finally (setf parser-list nil))))))
