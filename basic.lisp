@@ -109,3 +109,13 @@
   (let ((*memo-table* (make-hash-table))
         (*curtail-table* (make-hash-table)))
     (make-parse-result (funcall parser (make-context string)))))
+
+(defun parse-string* (parser string)
+  "Parse a string and return the first result, whether the parse was incomplete, and whether it was successfull as multiple values."
+  (let ((result
+         (current-result (parse-string parser string))))
+    (cond ((null result)
+           (values nil nil nil))
+          ((not (end-context-p (suffix-of result)))
+           (values (tree-of result) (suffix-of result) t))
+          (t (values (tree-of result) nil t)))))

@@ -78,4 +78,5 @@
            #:find-after?
            #:find-after*
            #:find*
-           #:find?))
+           #:find?
+           #:parse-string*))
