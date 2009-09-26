@@ -60,6 +60,7 @@ There is a number of predefined parsers in `parsers.lisp` and `greedy.lisp`. The
 
 The results are `parser-possibility` objects. Accessor `tree-of` will access the actual result, and `suffix-of` the remaining input context, of type `end-context` if an entire input was parsed. Function `end-context-p` will check if a context is an `end-context`.
 
+Utility function `parse-string* parser string` will discard all results after the first, which will be returned as mulitple values of: the result or `nil`, suffix context or `nil` when the input was exhausted, `t` for success and `nil` for failure in case `nil` was a valid result.
 ### example
 
 `test-arithmetic.lisp` contains an obligatory four expression infix arithmetic example. On my system it can parse 100000 nodes long randomly generated string in less than two seconds with rather simple grammar. In `test-expression.lisp` there is an example of a arithmetic parser using generalized expression parser, with precedence and subexpressions.
