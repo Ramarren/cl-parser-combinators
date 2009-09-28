@@ -110,12 +110,25 @@
         (*curtail-table* (make-hash-table)))
     (make-parse-result (funcall parser (make-context string)))))
 
-(defun parse-string* (parser string)
-  "Parse a string and return the first result, whether the parse was incomplete, and whether it was successfull as multiple values."
-  (let ((result
-         (current-result (parse-string parser string))))
-    (cond ((null result)
-           (values nil nil nil))
-          ((not (end-context-p (suffix-of result)))
-           (values (tree-of result) (suffix-of result) t))
-          (t (values (tree-of result) nil t)))))
+(defun parse-string* (parser string &key (complete nil))
+  "Parse a string and return the first result, whether the parse was incomplete, and whether it was
+successfull as multiple values. If COMPLETE is T, return the first parse to consume the input
+completely. If COMPLETE is :FIRST return the first result only when it the whole input was consumed,
+or immediately return nil."
+  (ecase complete
+    ((nil :first)
+     (let ((result
+            (current-result (parse-string parser string))))
+       (cond ((or (null result)
+                  (and (eql complete :first)
+                       (not (end-context-p (suffix-of result)))))
+              (values nil nil nil))
+             ((not (end-context-p (suffix-of result)))
+              (values (tree-of result) (suffix-of result) t))
+             (t (values (tree-of result) nil t)))))
+    (t (iter (with results = (parse-string parser string))
+             (for result = (next-result results))
+             (while result)
+             (when (end-context-p (suffix-of result))
+               (return (values (tree-of result) nil t)))
+             (finally (return (values nil nil nil)))))))
