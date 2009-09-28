@@ -18,7 +18,7 @@ There are contexts for lists and vectors. Contexts must implement `context-peek`
 
 ### primitive parsers
 
-This are the building blocks for most parsers. It is also possible to construct a thunk directly for efficiency. All parsers are obtainable only though their generators. Macors `def-cached-parser` and `def-cached-arg-parser` can be used to avoid recreating a parser every time.
+This are the building blocks for most parsers. It is also possible to construct a thunk directly for efficiency. All parsers are obtainable only though their generators. Macros `def-cached-parser` and `def-cached-arg-parser` can be used to avoid recreating a parser every time.
 
 `(zero)` is a parser generator for a parser which represents a parsing failure
 
@@ -60,7 +60,9 @@ There is a number of predefined parsers in `parsers.lisp` and `greedy.lisp`. The
 
 The results are `parser-possibility` objects. Accessor `tree-of` will access the actual result, and `suffix-of` the remaining input context, of type `end-context` if an entire input was parsed. Function `end-context-p` will check if a context is an `end-context`.
 
-Utility function `parse-string* parser string` will discard all results after the first, which will be returned as mulitple values of: the result or `nil`, suffix context or `nil` when the input was exhausted, `t` for success and `nil` for failure in case `nil` was a valid result.
+Utility function `parse-string* parser string &key (complete nil)` will discard all results after the first, which will be returned as multiple values of: the result or `nil`, suffix context or `nil` when the input was exhausted, `t` for success and `nil` for failure in case `nil` was a valid result.
+
+With the key argument `complete` value `t` first result which results from total consumption of input will be returned. If it is equal `:first` only the first result will be computed, and then returned if it is complete, otherwise the parse being unsuccessful.
 ### example
 
 `test-arithmetic.lisp` contains an obligatory four expression infix arithmetic example. On my system it can parse 100000 nodes long randomly generated string in less than two seconds with rather simple grammar. In `test-expression.lisp` there is an example of a arithmetic parser using generalized expression parser, with precedence and subexpressions.
