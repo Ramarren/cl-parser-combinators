@@ -1,5 +1,13 @@
 (in-package :parser-combinators)
 
+(defmacro define-oneshot-result (inp is-unread &body body)
+  `(function (lambda (,inp)
+     (let ((,is-unread t))
+       #'(lambda ()
+           (when ,is-unread
+             (setf ,is-unread nil)
+             ,@body))))))
+
 (declaim (inline sat))
 (def-cached-arg-parser sat (predicate)
   "Parser: return a token satisfying a predicate."
