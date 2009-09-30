@@ -1,10 +1,15 @@
 # parser-combinators
 
-This is an experimental implementation of [parser combinators](http://en.wikipedia.org/wiki/Parser_combinators) for Common Lisp. Do not use for any serious purpose. This is mostly inspired by Parsec, but without any optimizations. Parser combinators are, in theory, an elegant form of constructing parsers for context-free grammars.
+This is an experimental implementation of [parser combinators](http://en.wikipedia.org/wiki/Parser_combinators) for Common Lisp. This is mostly inspired by Parsec, but without any optimizations. Parser combinators are, in theory, an elegant form of constructing parsers for context-free grammars.
 
 It more or less works, but was not tested for any but the simplest cases, some parts of the interface are clunky, it is quite slow in general and probably has a tendency for exponential explosions. That said, it could probably be used to parse small amounts of data, especially if applied hierarchically. Comments welcome.
 
 I have found this more convenient than regular expressions in some cases, especially where maximum performace is not required.
+
+# Dependencies
+
+- iterate
+- alexandria
 
 # Usage
 
@@ -60,7 +65,7 @@ There is a number of predefined parsers in `parsers.lisp` and `greedy.lisp`. The
 
 The results are `parser-possibility` objects. Accessor `tree-of` will access the actual result, and `suffix-of` the remaining input context, of type `end-context` if an entire input was parsed. Function `end-context-p` will check if a context is an `end-context`.
 
-Utility function `parse-string* parser string &key (complete nil)` will discard all results after the first, which will be returned as multiple values of: the result or `nil`, suffix context or `nil` when the input was exhausted, `t` for success and `nil` for failure in case `nil` was a valid result.
+Utility function `parse-string* parser string &key (complete nil)` will discard all results after the first, which will be returned as multiple values of: the tree of the result or `nil`, suffix context or `nil` when the input was exhausted, `t` for success and `nil` for failure in case `nil` was a valid result.
 
 With the key argument `complete` value `t` first result which results from total consumption of input will be returned. If it is equal `:first` only the first result will be computed, and then returned if it is complete, otherwise the parse being unsuccessful.
 ### example

@@ -1,6 +1,6 @@
 (asdf:defsystem parser-combinators
   :version "0"
-  :description "Toy implementation of parser combinators"
+  :description "An implementation of parser combinators for Common Lisp"
   :maintainer "Jakub Higersberger <ramarren@gmail.com>"
   :author "Jakub Higersberger <ramarren@gmail.com>"
   :licence "BSD-style"
