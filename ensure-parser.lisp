@@ -53,7 +53,7 @@
               (string? parser)
               (char? (car parser))))
     (vector (if (length= 1 parser)
-                (char? parser)
+                (char? (aref parser 0))
                 (string? parser)))
     (t (char? parser))))
 
