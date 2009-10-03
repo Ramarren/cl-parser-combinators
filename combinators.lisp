@@ -82,5 +82,5 @@
      (define-oneshot-result inp is-unread
        (iter (for p in parser-list)
              (for result = (funcall (funcall (ensure-parser p) inp)))
-             (finding result)
+             (thereis result)
              (finally (setf parser-list nil))))))
