@@ -5,6 +5,12 @@
   (define-oneshot-result inp is-unread
     (make-instance 'parser-possibility :tree inp :suffix inp)))
 
+(def-cached-parser end?
+  "Parser: matches end of input, returns t"
+  (define-oneshot-result inp is-unread
+    (when (end-context-p inp)
+      (make-instance 'parser-possibility :tree t :suffix inp))))
+
 (def-cached-parser digit?
   "Parser: accept digit character"
   (sat #'digit-char-p))

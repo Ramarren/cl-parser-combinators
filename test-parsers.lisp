@@ -181,3 +181,13 @@
                                       (result (list term word)))
   ("alamakota;" '(#\; "alamakota"))
   ("alamakota" ";"))
+
+(defparsertest test-end? (mdo (<- word (word?))
+                              (<- end (end?))
+                              (result (list word end)))
+  ("alamakota" '("alamakota" t))
+  ("alamakota " ""))
+
+(defparsertest test-empty? (end?)
+  ("" t)
+  ("abc"))
