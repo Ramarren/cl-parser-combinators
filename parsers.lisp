@@ -297,6 +297,22 @@
     (mdo (breadth? p nil nil nil)
          q)))
 
+(defun find-before? (p q &optional (result-type 'list))
+  "Parser: Find a sequence of p terminated by q, doesn't consume q."
+  (with-parsers (p q)
+    #'(lambda (inp)
+        (let ((p-parse-continuation (funcall (breadth? p nil nil result-type) inp)))
+          #'(lambda ()
+              (let ((result nil))
+                (iter (until (or result
+                                 (null p-parse-continuation)))
+                      (for p-result = (funcall p-parse-continuation))
+                      (if p-result
+                          (when (funcall (funcall q (suffix-of p-result)))
+                            (setf result p-result))
+                          (setf p-parse-continuation nil)))
+                result))))))
+
 (defun find-after-collect? (p q &optional (result-type 'list))
   "Parser: Find first q after some sequence of p. Return cons of list of p-results and q"
   (with-parsers (p q)
