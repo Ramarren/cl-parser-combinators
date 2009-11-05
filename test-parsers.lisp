@@ -169,3 +169,9 @@
                                        "defg")
   ("ababcdefg" "defg")
   ("ababccdefg"))
+
+(defparsertest test-find-before? (mdo (<- word (word?))
+                                      (<- term #\;)
+                                      (result (list term word)))
+  ("alamakota;" '(#\; "alamakota"))
+  ("alamakota" ";"))
