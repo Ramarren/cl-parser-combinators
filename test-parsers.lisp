@@ -175,3 +175,9 @@
                                       (result (list term word)))
   ("alamakota;" '(#\; "alamakota"))
   ("alamakota" ";"))
+
+(defparsertest test-find-before* (mdo (<- word (word?))
+                                      (<- term #\;)
+                                      (result (list term word)))
+  ("alamakota;" '(#\; "alamakota"))
+  ("alamakota" ";"))

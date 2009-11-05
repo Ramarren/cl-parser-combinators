@@ -163,6 +163,21 @@
                                         :tree (tree-of q-result)
                                         :suffix (suffix-of q-result)))))))))
 
+(defun find-before* (p q &optional (result-type 'list))
+  "Non-backtracking parser: Find a sequence of p terminated by q, doesn't consume q."
+  (with-parsers (p q)
+    (define-oneshot-result inp is-unread
+      (iter (for p-result next (funcall (funcall p inp-prime)))
+            (for q-result next (funcall (funcall q inp-prime)))
+            (while (and p-result (null q-result)))
+            (for inp-prime initially inp then (suffix-of p-result))
+            (collect (tree-of p-result) into p-results)
+            (finally (return
+                       (when q-result
+                         (make-instance 'parser-possibility
+                                        :tree (coerce p-results result-type)
+                                        :suffix inp-prime))))))))
+
 (defun find-after-collect* (p q &optional (result-type 'list))
   "Non-backtracking parser: Find first q after some sequence of p. Return cons of list of p-results and q"
   (with-parsers (p q)
