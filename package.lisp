@@ -79,4 +79,7 @@
            #:find-after*
            #:find*
            #:find?
-           #:parse-string*))
+           #:parse-string*
+           #:find-before?
+           #:find-before*
+           #:end?))
