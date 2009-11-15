@@ -1,5 +1,12 @@
 (in-package :parser-combinators)
 
+(defun tag? (parser format-control &rest format-arguments)
+  (let ((tag (apply #'format nil format-control format-arguments)))
+    (with-parsers (parser)
+      #'(lambda (inp)
+          (let ((*tag-stack* (cons tag *tag-stack*)))
+            (funcall parser inp))))))
+
 (def-cached-parser context?
   "Parser: return current context without consuming any input"
   (define-oneshot-result inp is-unread
