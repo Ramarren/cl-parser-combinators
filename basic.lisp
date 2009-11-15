@@ -121,7 +121,7 @@ which allows approximate error reporting. It will be nil if the parse is success
  If COMPLETE is T, return the first parse to consume the input
 completely. If COMPLETE is :FIRST return the first result only when it the whole input was consumed,
 or immediately return nil."
-  (multiple-value-bind (parse-result front) (parse-string parser string)
+  (multiple-value-bind (parse-result front) (parse-string (ensure-parser parser) string)
     (ecase complete
       ((nil :first)
          (let ((result
