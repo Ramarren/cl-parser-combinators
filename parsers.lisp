@@ -5,7 +5,13 @@
     (with-parsers (parser)
       #'(lambda (inp)
           (let ((*tag-stack* (cons tag *tag-stack*)))
-            (funcall parser inp))))))
+            ;; bind *tag-stack* to mark any non-lazy parser results (usually first result will be
+            ;; evaluated strictly), save it and apply it to continuation
+            (let ((tag-stack *tag-stack*)
+                  (continuation (funcall parser inp)))
+              #'(lambda ()
+                  (let ((*tag-stack* tag-stack))
+                    (funcall continuation)))))))))
 
 (def-cached-parser context?
   "Parser: return current context without consuming any input"
