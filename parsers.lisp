@@ -46,9 +46,12 @@ parsers."
 
 (def-cached-parser end?
   "Parser: matches end of input, returns t"
-  (define-oneshot-result inp is-unread
-    (when (end-context-p inp)
-      (make-instance 'parser-possibility :tree t :suffix inp))))
+  (tag?
+   (define-oneshot-result inp is-unread
+     (update-front-context inp)
+     (when (end-context-p inp)
+       (make-instance 'parser-possibility :tree t :suffix inp)))
+   "end of input"))
 
 (def-cached-parser digit?
   "Parser: accept digit character"
