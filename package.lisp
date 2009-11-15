@@ -85,4 +85,5 @@
            #:end?
            #:context-of
            #:tags-of
-           #:tag?))
+           #:tag?
+           #:cut-tag?))
