@@ -48,27 +48,29 @@
          (> (position-of context1)
             (position-of context2)))))
 
-(defmethod context-next :around ((context context))
-  (let ((cache (cache-of context))
-        (front (front-of context)))
-    (let ((next-context
-           (etypecase cache
-             (null (call-next-method))
-             (vector (or (aref cache (position-of context))
-                         (setf (aref cache (position-of context))
-                               (call-next-method))))
-             (hash-table (or (gethash (position-of context) cache)
-                             (setf (gethash (position-of context) cache)
-                                   (call-next-method)))))))
-      ;; update front context
+(defgeneric update-front-context (context)
+  (:method ((context context))
+    (let ((front (front-of context)))
       (cond ((or (null (context-of front))
-                 (context-greater next-context (context-of front)))
-             (setf (context-of front) next-context
+                 (context-greater context (context-of front)))
+             (setf (context-of front) context
                    (tags-of front) (list *tag-stack*)))
-            ((context-equal next-context (context-of front))
-             (push *tag-stack* (tags-of front))))
-      next-context)))
+            ((context-equal context (context-of front))
+             (push *tag-stack* (tags-of front)))))))
 
+(defmethod context-peek :after ((context context))
+  (update-front-context context))
+
+(defmethod context-next :around ((context context))
+  (let ((cache (cache-of context)))
+    (etypecase cache
+      (null (call-next-method))
+      (vector (or (aref cache (position-of context))
+                  (setf (aref cache (position-of context))
+                        (call-next-method))))
+      (hash-table (or (gethash (position-of context) cache)
+                      (setf (gethash (position-of context) cache)
+                            (call-next-method)))))))
 
 (defgeneric context-interval (context1 context2 &optional result-type)
   (:method ((context1 context) (context2 context) &optional (result-type 'string))
