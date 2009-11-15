@@ -116,7 +116,7 @@
   "Parse a string and return the first result, whether the parse was incomplete, whether it was
 successfull, and the context front as multiple values. The context front is an object containg the
 context latest in the input and a list of lists of parser tags which were current at that point,
-which allows approximate error reporting.
+which allows approximate error reporting. It will be nil if the parse is successful and complete.
 
  If COMPLETE is T, return the first parse to consume the input
 completely. If COMPLETE is :FIRST return the first result only when it the whole input was consumed,
@@ -129,13 +129,13 @@ or immediately return nil."
            (cond ((or (null result)
                       (and (eql complete :first)
                            (not (end-context-p (suffix-of result)))))
-                  (values nil nil nil))
+                  (values nil nil nil front))
                  ((not (end-context-p (suffix-of result)))
-                  (values (tree-of result) (suffix-of result) t))
-                 (t (values (tree-of result) nil t)))))
+                  (values (tree-of result) (suffix-of result) t front))
+                 (t (values (tree-of result) nil t nil)))))
       (t (iter (with results = parse-result)
                (for result = (next-result results))
                (while result)
                (when (end-context-p (suffix-of result))
-                 (return (values (tree-of result) nil t)))
-               (finally (return (values nil nil nil))))))))
+                 (return (values (tree-of result) nil t nil)))
+               (finally (return (values nil nil nil front))))))))
