@@ -1,16 +1,42 @@
 (in-package :parser-combinators)
 
+(defparameter *cut-tag* nil)
+
 (defun tag? (parser format-control &rest format-arguments)
+  "Parser modifier: add formatted string to tag stack for given parser."
   (let ((tag (apply #'format nil format-control format-arguments)))
     (with-parsers (parser)
       #'(lambda (inp)
-          (let ((*tag-stack* (cons tag *tag-stack*)))
+          (if *cut-tag*
+              (let ((tag-stack *tag-stack*)
+                    (continuation (funcall parser inp)))
+                #'(lambda ()
+                    (let ((*tag-stack* tag-stack))
+                      (funcall continuation))))
+              (let ((*tag-stack* (cons tag *tag-stack*)))
+                ;; bind *tag-stack* to mark any non-lazy parser results (usually first result will be
+                ;; evaluated strictly), save it and apply it to continuation
+                (let ((tag-stack *tag-stack*)
+                      (continuation (funcall parser inp)))
+                  #'(lambda ()
+                      (let ((*tag-stack* tag-stack))
+                        (funcall continuation))))))))))
+
+(defun cut-tag? (parser format-control &rest format-arguments)
+  "Parser modifier: add formatted string to tag stack for given parser, suppressing all lower level
+parsers."
+  (let ((tag (apply #'format nil format-control format-arguments)))
+    (with-parsers (parser)
+      #'(lambda (inp)
+          (let ((*cut-tag* t)
+                (*tag-stack* (cons tag *tag-stack*)))
             ;; bind *tag-stack* to mark any non-lazy parser results (usually first result will be
             ;; evaluated strictly), save it and apply it to continuation
             (let ((tag-stack *tag-stack*)
                   (continuation (funcall parser inp)))
               #'(lambda ()
-                  (let ((*tag-stack* tag-stack))
+                  (let ((*tag-stack* tag-stack)
+                        (*cut-tag* t))
                     (funcall continuation)))))))))
 
 (def-cached-parser context?
