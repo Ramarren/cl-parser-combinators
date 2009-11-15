@@ -84,4 +84,5 @@
            #:find-before*
            #:end?
            #:context-of
-           #:tags-of))
+           #:tags-of
+           #:tag?))
