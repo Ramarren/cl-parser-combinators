@@ -96,6 +96,18 @@
   ("123" (list #\1 (list #\2 #\3)))
   (""))
 
+(defparsertest test-find? (find? "ab")
+  ("cacbcacab" "ab")
+  ("" "cacacbac"))
+
+(defparsertest test-find-after? (find-after? #\c "ab")
+  ("ccccccab" "ab" "cab" "ab")
+  ("" "acb" "bcccab"))
+
+(defparsertest test-find-after-collect? (find-after-collect? #\a "cc" 'string)
+  ("aaaacc" '("aaaa" . "cc"))
+  ("aaaa" "aaac"))
+
 (defparsertest test-many* (many* (letter?))
   ("abc" (list #\a #\b #\c) "cdef" (list #\c #\d #\e #\f) "Aaa12" (list #\A #\a #\a) "" nil
    "123" nil " ," nil " a" nil)
