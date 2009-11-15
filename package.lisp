@@ -82,4 +82,6 @@
            #:parse-string*
            #:find-before?
            #:find-before*
-           #:end?))
+           #:end?
+           #:context-of
+           #:tags-of))
