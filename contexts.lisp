@@ -14,6 +14,9 @@
    (front       :accessor front-of       :initarg :front       :initform (make-instance 'context-front))
    (cache       :accessor cache-of       :initarg :cache       :initform nil)))
 
+(defmethod position-of ((context-front context-front))
+  (position-of (context-of context-front)))
+
 (defmacro copy-context (context class &rest additional-arguments)
   `(make-instance ,class
                   ,@(iter (with default = (gensym))

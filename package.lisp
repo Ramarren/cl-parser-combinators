@@ -86,4 +86,5 @@
            #:context-of
            #:tags-of
            #:tag?
-           #:cut-tag?))
+           #:cut-tag?
+           #:position-of))

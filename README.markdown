@@ -68,6 +68,16 @@ The results are `parser-possibility` objects. Accessor `tree-of` will access the
 Utility function `parse-string* parser string &key (complete nil)` will discard all results after the first, which will be returned as multiple values of: the tree of the result or `nil`, suffix context or `nil` when the input was exhausted, `t` for success and `nil` for failure in case `nil` was a valid result.
 
 With the key argument `complete` value `t` first result which results from total consumption of input will be returned. If it is equal `:first` only the first result will be computed, and then returned if it is complete, otherwise the parse being unsuccessful.
+
+### error detection
+Since the parsers are fully backtracking it is difficult to differentiate normal backtracking from parsing failure. There is one available approximation: second return value of `parse-string` and fourth of `parse-string*` will be, if the parse was a failure or incomplete, a `context-front` object.
+
+It has two interesting accessors, `position-of` which indicates a position to which the input has been consumed, and `tags-of` which returns a list of lists of tags, which indicate what parsers were active when the element was consumed, from most specific first in the inner list, with the outer list having one sublist per time the element has been consumed.
+
+Most predefined parsers have no tags. Tags can be added with `tag? parser format-control &rest format-arguments` and `cut-tag? parser format-control &rest format-arguments`. The latter suppresses all tags assigned by the `parser`.
+
+As mentioned above, this is only an approximation, and there is no guarantee that the most advanced input fragment is the source of the parse failure, or that the tags at that point are relevant or even correct.
+
 ### example
 
 `test-arithmetic.lisp` contains an obligatory four expression infix arithmetic example. On my system it can parse 100000 nodes long randomly generated string in less than two seconds with rather simple grammar. In `test-expression.lisp` there is an example of a arithmetic parser using generalized expression parser, with precedence and subexpressions.
