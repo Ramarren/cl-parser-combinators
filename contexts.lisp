@@ -1,10 +1,17 @@
 (in-package :parser-combinators)
 
+(defparameter *tag-stack* nil)
+
+(defclass context-front ()
+  ((context :accessor context-of :initarg :context :initform nil)
+   (tags    :accessor tags-of    :initarg :tags    :initform nil)))
+
 (defclass context ()
   ((sequence-id :accessor sequence-id-of :initarg :sequence-id :initform (gensym))
    (storage     :accessor storage-of     :initarg :storage     :initform nil)
    (position    :accessor position-of    :initarg :position    :initform 0)
    (length      :accessor length-of      :initarg :length      :initform 0)
+   (front       :accessor front-of       :initarg :front       :initform (make-instance 'context-front))
    (cache       :accessor cache-of       :initarg :cache       :initform nil)))
 
 (defmacro copy-context (context class &rest additional-arguments)
@@ -15,6 +22,7 @@
                                  (:storage storage-of)
                                  (:position position-of)
                                  (:length length-of)
+                                 (:front front-of)
                                  (:cache cache-of)))
                           (appending (when (eql (getf additional-arguments initarg default)
                                                 default)
@@ -25,17 +33,6 @@
 
 (defgeneric context-next (context))
 
-(defmethod context-next :around ((context context))
-  (let ((cache (cache-of context)))
-    (etypecase cache
-      (null (call-next-method))
-      (vector (or (aref cache (position-of context))
-                  (setf (aref cache (position-of context))
-                        (call-next-method))))
-      (hash-table (or (gethash (position-of context) cache)
-                      (setf (gethash (position-of context) cache)
-                            (call-next-method)))))))
-
 (defgeneric context-equal (context1 context2)
   (:method ((context1 context) (context2 context))
     (or (eq context1 context2)
@@ -43,6 +40,35 @@
                  (sequence-id-of context2))
              (eql (position-of context1)
                   (position-of context2))))))
+
+(defgeneric context-greater (context1 context2)
+  (:method ((context1 context) (context2 context))
+    (and (eq (sequence-id-of context1)
+             (sequence-id-of context2))
+         (> (position-of context1)
+            (position-of context2)))))
+
+(defmethod context-next :around ((context context))
+  (let ((cache (cache-of context))
+        (front (front-of context)))
+    (let ((next-context
+           (etypecase cache
+             (null (call-next-method))
+             (vector (or (aref cache (position-of context))
+                         (setf (aref cache (position-of context))
+                               (call-next-method))))
+             (hash-table (or (gethash (position-of context) cache)
+                             (setf (gethash (position-of context) cache)
+                                   (call-next-method)))))))
+      ;; update front context
+      (cond ((or (null (context-of front))
+                 (context-greater next-context (context-of front)))
+             (setf (context-of front) next-context
+                   (tags-of front) (list *tag-stack*)))
+            ((context-equal next-context (context-of front))
+             (push *tag-stack* (tags-of front))))
+      next-context)))
+
 
 (defgeneric context-interval (context1 context2 &optional result-type)
   (:method ((context1 context) (context2 context) &optional (result-type 'string))
