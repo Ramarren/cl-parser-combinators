@@ -145,7 +145,7 @@ parsers."
                             (zero-width
                              (setf zero-width nil)
                              (make-instance 'parser-possibility
-                                            :tree nil
+                                            :tree (coerce nil result-type)
                                             :suffix inp))))))))))))
 
 (def-cached-parser word?
