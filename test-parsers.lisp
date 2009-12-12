@@ -207,3 +207,8 @@
 (defparsertest test-seq-list? (seq-list? #\a #\b #\c)
   ("abc" '(#\a #\b #\c))
   ("abd"))
+
+(defparsertest test-named-seq? (named-seq? (<- a #\a) #\b (<- c #\c)
+                                           (list a 'b c))
+  ("abc" '(#\a b #\c))
+  ("acb"))

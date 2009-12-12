@@ -436,3 +436,39 @@ parsers."
                            (decf result-count)
                            (pop result-stack)
                            result))))))))))
+
+(defmacro named-seq? (&rest parser-descriptions)
+  (assert (> (length parser-descriptions) 1))
+  (let ((name-vector (make-array (1- (length parser-descriptions)) :initial-element nil))
+        (parsers nil)
+        (result-form nil)
+        (gensym-list nil))
+    (iter (for description in parser-descriptions)
+          (for i from 0)
+          (cond ((= i (length name-vector))
+                 (setf result-form description))
+                ((and (listp description)
+                      (eql (car description) '<-))
+                 (setf (aref name-vector i) (second description))
+                 (push (third description) parsers))
+                (t
+                 (push description parsers)
+                 (let ((gensym (gensym)))
+                   (push gensym gensym-list)
+                   (setf (aref name-vector i) gensym)))))
+    (with-unique-names (inp continuation seq-parser result)
+      `(let ((,seq-parser (seq-list? ,@(nreverse parsers))))
+         #'(lambda (,inp)
+             (let ((,continuation (funcall ,seq-parser ,inp)))
+               #'(lambda ()
+                   (when ,continuation
+                     (let ((,result (funcall ,continuation)))
+                       (if ,result
+                           (destructuring-bind ,(map 'list #'identity name-vector)
+                               (tree-of ,result)
+                               ,@(when gensym-list
+                                   (list `(declare (ignore ,@gensym-list))))
+                             (make-instance 'parser-possibility
+                                            :tree ,result-form
+                                            :suffix (suffix-of ,result)))
+                           (setf ,continuation nil)))))))))))

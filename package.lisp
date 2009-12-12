@@ -90,4 +90,5 @@
            #:position-of
            #:find-before-token*
            #:gather-before-token*
-           #:seq-list?))
+           #:seq-list?
+           #:named-seq?))
