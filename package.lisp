@@ -87,4 +87,7 @@
            #:tags-of
            #:tag?
            #:cut-tag?
-           #:position-of))
+           #:position-of
+           #:find-before-token*
+           #:gather-before-token*
+           #:seq-list?))

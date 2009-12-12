@@ -397,3 +397,42 @@ parsers."
             (setf wrapped-term (choice (bracket? bracket-left expr-parser bracket-right)
                                        term)))
           expr-parser)))))
+
+(defun seq-list? (&rest parsers)
+  (assert parsers)
+  (let ((parsers (map 'vector #'ensure-parser parsers)))
+    #'(lambda (inp)
+        (let ((continuation-stack (list (funcall (aref parsers 0) inp)))
+              (result-stack nil)
+              (continuation-count 1)
+              (result-count 0)
+              (l (length parsers)))
+          #'(lambda ()
+              (iter (while continuation-stack)
+                    (until (= result-count l))
+                    (let ((next-result (funcall (car continuation-stack))))
+                      (cond ((null next-result)
+                             (pop continuation-stack)
+                             (decf continuation-count)
+                             (pop result-stack)
+                             (decf result-count))
+                            ((= continuation-count l)
+                             (incf result-count)
+                             (push next-result result-stack))
+                            (t
+                             (incf result-count)
+                             (push next-result result-stack)
+                             (incf continuation-count)
+                             (push (funcall (aref parsers result-count)
+                                            (suffix-of next-result))
+                                   continuation-stack))))
+                    (finally
+                     (return
+                       (when result-stack
+                         (let ((result
+                                (make-instance 'parser-possibility
+                                               :tree (mapcar #'tree-of (reverse result-stack))
+                                               :suffix (suffix-of (car result-stack)))))
+                           (decf result-count)
+                           (pop result-stack)
+                           result))))))))))

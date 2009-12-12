@@ -203,3 +203,7 @@
 (defparsertest test-empty? (end?)
   ("" t)
   ("abc"))
+
+(defparsertest test-seq-list? (seq-list? #\a #\b #\c)
+  ("abc" '(#\a #\b #\c))
+  ("abd"))

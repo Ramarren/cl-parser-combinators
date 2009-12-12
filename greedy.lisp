@@ -163,6 +163,36 @@
                                         :tree (tree-of q-result)
                                         :suffix (suffix-of q-result)))))))))
 
+(defun gather-before-token* (token &key (result-type 'list) (test #'eql) (accept-end nil))
+  "Non-backtracking parser: Find a sequence of tokens terminated by single token q, which is not consumed."
+  (define-oneshot-result inp is-unread
+    (iter (until (or (end-context-p inp-prime)
+                     (funcall test (context-peek inp-prime) token)))
+          (for inp-prime initially inp then (context-next inp-prime))
+          (collect (context-peek inp-prime) into results)
+          (finally (return
+                     (when (and results
+                                (or (and accept-end (end-context-p inp-prime))
+                                    (funcall test (context-peek inp-prime) token)))
+                       (make-instance 'parser-possibility
+                                      :tree (coerce results result-type)
+                                      :suffix inp-prime)))))))
+
+(defun find-before-token* (p token &key (result-type 'list) (test #'eql))
+  "Non-backtracking parser: Find a sequence of p terminated by single token q, which is not consumed."
+  (with-parsers (p)
+    (define-oneshot-result inp is-unread
+      (iter (for p-result next (funcall (funcall p inp-prime)))
+            (while (and p-result (not (funcall test (context-peek inp-prime) token))))
+            (for inp-prime initially inp then (suffix-of p-result))
+            (collect (tree-of p-result) into p-results)
+            (finally (return
+                       (when (funcall test (context-peek inp-prime) token)
+                         (make-instance 'parser-possibility
+                                        :tree (coerce p-results result-type)
+                                        :suffix inp-prime))))))))
+
+
 (defun find-before* (p q &optional (result-type 'list))
   "Non-backtracking parser: Find a sequence of p terminated by q, doesn't consume q."
   (with-parsers (p q)
