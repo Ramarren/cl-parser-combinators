@@ -163,20 +163,27 @@
                                         :tree (tree-of q-result)
                                         :suffix (suffix-of q-result)))))))))
 
-(defun gather-before-token* (token &key (result-type 'list) (test #'eql) (accept-end nil))
-  "Non-backtracking parser: Find a sequence of tokens terminated by single token q, which is not consumed."
+(defun gather-if-not* (predicate &key (result-type 'list) (accept-end nil))
+  "Non-backtracking parser: Find a sequence of tokens terminated by one for which predicate returns true, which is not consumed."
   (define-oneshot-result inp is-unread
     (iter (until (or (end-context-p inp-prime)
-                     (funcall test (context-peek inp-prime) token)))
+                     (funcall predicate (context-peek inp-prime))))
           (for inp-prime initially inp then (context-next inp-prime))
           (collect (context-peek inp-prime) into results)
           (finally (return
                      (when (and results
                                 (or (and accept-end (end-context-p inp-prime))
-                                    (funcall test (context-peek inp-prime) token)))
+                                    (funcall predicate (context-peek inp-prime))))
                        (make-instance 'parser-possibility
                                       :tree (coerce results result-type)
                                       :suffix inp-prime)))))))
+
+(defun gather-before-token* (token &key (result-type 'list) (test #'eql) (accept-end nil))
+  "Non-backtracking parser: Find a sequence of tokens terminated by single token, which is not consumed."
+  (gather-if-not* #'(lambda (input-token)
+                      (funcall test input-token token))
+                  :result-type result-type
+                  :accept-end accept-end))
 
 (defun find-before-token* (p token &key (result-type 'list) (test #'eql))
   "Non-backtracking parser: Find a sequence of p terminated by single token q, which is not consumed."

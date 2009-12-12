@@ -93,4 +93,5 @@
            #:seq-list?
            #:named-seq?
            #:seq-list*
-           #:named-seq*))
+           #:named-seq*
+           #:gather-if-not*))
