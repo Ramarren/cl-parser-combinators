@@ -91,4 +91,6 @@
            #:find-before-token*
            #:gather-before-token*
            #:seq-list?
-           #:named-seq?))
+           #:named-seq?
+           #:seq-list*
+           #:named-seq*))

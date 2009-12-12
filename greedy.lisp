@@ -252,3 +252,21 @@
             (setf wrapped-term (choice1 (bracket? bracket-left expr-parser bracket-right)
                                         term)))
           expr-parser)))))
+
+(defun seq-list* (&rest parsers)
+  (assert parsers)
+  (let ((parsers (map 'vector #'ensure-parser parsers)))
+    (define-oneshot-result inp is-unread
+      (iter (for parser in-vector parsers)
+            (for inp-prime initially inp then (suffix-of result))
+            (for result = (funcall (funcall parser inp-prime)))
+            (while result)
+            (collect result into results)
+            (finally (return
+                       (when result
+                         (make-instance 'parser-possibility
+                                        :tree (mapcar #'tree-of results)
+                                        :suffix (suffix-of result)))))))))
+
+(defmacro named-seq* (&rest parser-descriptions)
+  `(%named-seq? seq-list* ,@parser-descriptions))

@@ -437,7 +437,7 @@ parsers."
                            (pop result-stack)
                            result))))))))))
 
-(defmacro named-seq? (&rest parser-descriptions)
+(defmacro %named-seq? (sequence-parser &rest parser-descriptions)
   (assert (> (length parser-descriptions) 1))
   (let ((name-vector (make-array (1- (length parser-descriptions)) :initial-element nil))
         (parsers nil)
@@ -457,7 +457,7 @@ parsers."
                    (push gensym gensym-list)
                    (setf (aref name-vector i) gensym)))))
     (with-unique-names (inp continuation seq-parser result)
-      `(let ((,seq-parser (seq-list? ,@(nreverse parsers))))
+      `(let ((,seq-parser (,sequence-parser ,@(nreverse parsers))))
          #'(lambda (,inp)
              (let ((,continuation (funcall ,seq-parser ,inp)))
                #'(lambda ()
@@ -466,9 +466,12 @@ parsers."
                        (if ,result
                            (destructuring-bind ,(map 'list #'identity name-vector)
                                (tree-of ,result)
-                               ,@(when gensym-list
-                                   (list `(declare (ignore ,@gensym-list))))
+                             ,@(when gensym-list
+                                 (list `(declare (ignore ,@gensym-list))))
                              (make-instance 'parser-possibility
                                             :tree ,result-form
                                             :suffix (suffix-of ,result)))
                            (setf ,continuation nil)))))))))))
+
+(defmacro named-seq? (&rest parser-descriptions)
+  `(%named-seq? seq-list? ,@parser-descriptions))
