@@ -23,14 +23,16 @@
 (defmacro cached-arguments? (parser label &rest arguments)
   "Parser modifier macro: cache parser as label with argument list equal under equal in global cache."
   (with-unique-names (inp cache subcache args)
-    `(let ((,args ,(cons 'list arguments)))
-      #'(lambda (,inp)
-          (unless (gethash ',label *parser-cache*)
-            (setf (gethash ',label *parser-cache*) (make-hash-table :test 'equal)))
-          (let ((,cache (gethash ',label *parser-cache*)))
-            (if-let ((,subcache (gethash ,args ,cache)))
-              (funcall ,subcache ,inp)
-              (funcall (setf (gethash ,args ,cache) ,parser) ,inp)))))))
+    (let ((filtered-arguments (mapcar #'ensure-car
+                                      (remove-if (rcurry #'member '(&optional &key &rest)) arguments))))
+      `(let ((,args ,(cons 'list filtered-arguments)))
+         #'(lambda (,inp)
+             (unless (gethash ',label *parser-cache*)
+               (setf (gethash ',label *parser-cache*) (make-hash-table :test 'equal)))
+             (let ((,cache (gethash ',label *parser-cache*)))
+               (if-let ((,subcache (gethash ,args ,cache)))
+                 (funcall ,subcache ,inp)
+                 (funcall (setf (gethash ,args ,cache) ,parser) ,inp))))))))
 
 (defmacro def-cached-arg-parser (name arguments &body body)
   "Define cached parser with arguments."
