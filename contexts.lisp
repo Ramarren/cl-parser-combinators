@@ -6,13 +6,26 @@
   ((context :accessor context-of :initarg :context :initform nil)
    (tags    :accessor tags-of    :initarg :tags    :initform nil)))
 
-(defclass context ()
-  ((sequence-id :accessor sequence-id-of :initarg :sequence-id :initform (gensym))
-   (storage     :accessor storage-of     :initarg :storage     :initform nil)
-   (position    :accessor position-of    :initarg :position    :initform 0)
-   (length      :accessor length-of      :initarg :length      :initform 0)
+(defclass context-common ()
+  ((length      :accessor length-of      :initarg :length      :initform 0)
    (front       :accessor front-of       :initarg :front       :initform (make-instance 'context-front))
    (cache       :accessor cache-of       :initarg :cache       :initform nil)))
+
+(defclass context ()
+  ((common      :accessor common-of      :initarg :common)
+   (position    :accessor position-of    :initarg :position    :initform 0)))
+
+(defmethod cache-of ((context context))
+  (cache-of (common-of context)))
+
+(defmethod length-of ((context context))
+  (length-of (common-of context)))
+
+(defmethod front-of ((context context))
+  (front-of (common-of context)))
+
+(defmethod (setf front-of) (new-value (context context))
+  (setf (front-of (common-of context)) new-value))
 
 (defmethod position-of ((context-front context-front))
   (position-of (context-of context-front)))
@@ -21,12 +34,8 @@
   `(make-instance ,class
                   ,@(iter (with default = (gensym))
                           (for (initarg accessor) in
-                               '((:sequence-id sequence-id-of)
-                                 (:storage storage-of)
-                                 (:position position-of)
-                                 (:length length-of)
-                                 (:front front-of)
-                                 (:cache cache-of)))
+                               '((:common common-of)
+                                 (:position position-of)))
                           (appending (when (eql (getf additional-arguments initarg default)
                                                 default)
                                        `(,initarg (,accessor ,context)))))
@@ -39,15 +48,15 @@
 (defgeneric context-equal (context1 context2)
   (:method ((context1 context) (context2 context))
     (or (eq context1 context2)
-        (and (eq (sequence-id-of context1)
-                 (sequence-id-of context2))
+        (and (eq (common-of context1)
+                 (common-of context2))
              (eql (position-of context1)
                   (position-of context2))))))
 
 (defgeneric context-greater (context1 context2)
   (:method ((context1 context) (context2 context))
-    (and (eq (sequence-id-of context1)
-             (sequence-id-of context2))
+    (and (eq (common-of context1)
+             (common-of context2))
          (> (position-of context1)
             (position-of context2)))))
 
@@ -77,8 +86,8 @@
 
 (defgeneric context-interval (context1 context2 &optional result-type)
   (:method ((context1 context) (context2 context) &optional (result-type 'string))
-    (assert (eql (sequence-id-of context1)
-                 (sequence-id-of context2)))
+    (assert (eql (common-of context1)
+                 (common-of context2)))
     (assert (<= (position-of context1)
                 (position-of context2)))
     (if (= (position-of context1) (position-of context2))
@@ -105,7 +114,7 @@
   nil)
 
 (defclass list-context (context)
-  ())
+  ((storage :accessor storage-of :initarg :storage)))
 
 (defmethod context-next ((context list-context))
   (let ((new-position (1+ (position-of context))))
@@ -116,13 +125,19 @@
 (defmethod context-peek ((context list-context))
   (car (storage-of context)))
 
+(defclass vector-context-common (context-common)
+  ((storage :accessor storage-of :initarg :storage)))
+
 (defclass vector-context (context)
   ())
+
+(defmethod storage-of ((context vector-context))
+  (storage-of (common-of context)))
 
 (defmethod context-next ((context vector-context))
   (let ((new-position (1+ (position-of context))))
     (if (= new-position (length-of context))
-        (copy-context context 'end-context :position new-position :storage nil)
+        (copy-context context 'end-context :position new-position)
         (copy-context context 'vector-context :position new-position))))
 
 (defmethod context-peek ((context vector-context))
@@ -140,16 +155,18 @@
 
 (defmethod make-context ((list list) &optional (cache-type *default-context-cache*))
   (if (null list)
-      (make-instance 'end-context)
+      (make-instance 'end-context :common (make-instance 'context-common))
       (make-instance 'list-context
                      :storage list
-                     :length (length list)
-                     :cache (make-cache cache-type (length list)))))
+                     :common (make-instance 'context-common
+                                            :length (length list)
+                                            :cache (make-cache cache-type (length list))))))
 
 (defmethod make-context ((vector vector) &optional (cache-type *default-context-cache*))
   (if (zerop (length vector))
-      (make-instance 'end-context)
+      (make-instance 'end-context :common (make-instance 'vector-context-common))
       (make-instance 'vector-context
-                     :storage vector
-                     :length (length vector)
-                     :cache (make-cache cache-type (length vector)))))
+                     :common (make-instance 'vector-context-common
+                                            :storage vector
+                                            :length (length vector)
+                                            :cache (make-cache cache-type (length vector))))))
