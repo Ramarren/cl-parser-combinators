@@ -399,6 +399,7 @@ parsers."
           expr-parser)))))
 
 (defun seq-list? (&rest parsers)
+  "Parser: Return a list of results of PARSERS."
   (assert parsers)
   (let ((parsers (map 'vector #'ensure-parser parsers)))
     #'(lambda (inp)
@@ -474,4 +475,10 @@ parsers."
                            (setf ,continuation nil)))))))))))
 
 (defmacro named-seq? (&rest parser-descriptions)
+  "Parser: This is similar to MDO, except that constructed parsers cannot depend on the results of
+previous ones and the final form is not used as a parser, but is automatically used to construct the
+result. All names bound using the (<- name parser) construct are only available in that final form.
+
+This parser generator is useful when full generality of MDO is not necessary, as it is implemented
+non-recursively and has better memory performance."
   `(%named-seq? seq-list? ,@parser-descriptions))
