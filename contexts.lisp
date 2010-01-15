@@ -85,11 +85,13 @@
                             (call-next-method)))))))
 
 (defgeneric context-interval (context1 context2 &optional result-type)
-  (:method ((context1 context) (context2 context) &optional (result-type 'string))
+  (:method :before ((context1 context) (context2 context) &optional result-type)
+    (declare (ignore result-type))
     (assert (eql (common-of context1)
                  (common-of context2)))
     (assert (<= (position-of context1)
-                (position-of context2)))
+                (position-of context2))))
+  (:method ((context1 context) (context2 context) &optional (result-type 'string))
     (if (= (position-of context1) (position-of context2))
         (coerce nil result-type)
         (coerce (iter (for c initially context1 then (context-next c))
@@ -142,6 +144,14 @@
 
 (defmethod context-peek ((context vector-context))
   (aref (storage-of context) (position-of context)))
+
+(defmethod context-interval ((context1 vector-context) (context2 vector-context) &optional (result-type 'string))
+  (let ((storage (storage-of context1)))
+    (coerce (subseq storage (position-of context1) (position-of context2)) result-type)))
+
+(defmethod context-interval ((context1 vector-context) (context2 end-context) &optional (result-type 'string))
+  (let ((storage (storage-of context1)))
+    (coerce (subseq storage (position-of context1)) result-type)))
 
 (defvar *default-context-cache* :vector)
 
