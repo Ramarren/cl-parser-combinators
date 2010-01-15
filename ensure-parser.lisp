@@ -34,7 +34,7 @@
   "Parser: accept token char-equal to argument"
   (sat (curry #'char-equal character)))
 
-(def-cached-arg-parser string? (sequence &optional (test #'eql))
+(def-cached-arg-parser string? (sequence &key (test #'eql) (result-type 'string))
   "Non-backtracking parser: accept a sequence of elements with equality tested by TEST."
   (let ((vector (coerce sequence 'vector)))
     (define-oneshot-result inp is-unread
@@ -47,7 +47,7 @@
               (return nil))
             (finally (return
                        (make-instance 'parser-possibility
-                                      :tree (copy-seq sequence)
+                                      :tree (context-interval inp inp-iter result-type)
                                       :suffix inp-iter)))))))
 
 (defun ensure-parser (parser)
