@@ -30,6 +30,26 @@
   "Parser: accept token eql to argument"
   (sat (curry #'eql character)))
 
+(def-cached-arg-parser char-equal? (character)
+  "Parser: accept token char-equal to argument"
+  (sat (curry #'char-equal character)))
+
+(def-cached-arg-parser string-equal? (sequence)
+  "Non-backtracking parser: accept a sequence of char-equal elements."
+  (let ((vector (coerce sequence 'vector)))
+    (define-oneshot-result inp is-unread
+      (iter (for c in-vector vector)
+            (for inp-iter initially inp then (context-next inp-iter))
+            (when (end-context-p inp-iter)
+              (return nil))
+            (for inp-data = (context-peek inp-iter))
+            (unless (char-equal c inp-data)
+              (return nil))
+            (finally (return
+                       (make-instance 'parser-possibility
+                                      :tree (copy-seq sequence)
+                                      :suffix inp-iter)))))))
+
 (def-cached-arg-parser string? (sequence)
   "Non-backtracking parser: accept a sequence of EQL elements."
   (let ((vector (coerce sequence 'vector)))
