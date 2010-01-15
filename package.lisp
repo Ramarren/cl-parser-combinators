@@ -1,6 +1,7 @@
 (defpackage :parser-combinators
     (:use :cl :iterate :alexandria)
-  (:export #:result
+  (:export #:drop-parser-cache
+           #:result
            #:zero
            #:item
            #:sat

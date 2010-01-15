@@ -2,6 +2,9 @@
 
 (defvar *parser-cache* (make-hash-table))
 
+(defun drop-parser-cache ()
+  (clrhash *parser-cache*))
+
 ;; parser caching
 
 (defmacro cached? (parser label)
