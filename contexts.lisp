@@ -119,7 +119,7 @@
 (defmethod context-next ((context list-context))
   (let ((new-position (1+ (position-of context))))
     (if (= new-position (length-of context))
-        (copy-context context 'end-context :storage nil :position new-position)
+        (copy-context context 'end-context :position new-position)
         (copy-context context 'list-context :storage (cdr (storage-of context)) :position new-position))))
 
 (defmethod context-peek ((context list-context))
