@@ -163,13 +163,13 @@
                                         :tree (tree-of q-result)
                                         :suffix (suffix-of q-result)))))))))
 
-(defgeneric gather-if-not*-using-context (input predicate accept-end)
+(defgeneric gather-if-not*-using-context (input predicate accept-end accept-empty)
   (:documentation "Parser gather-if-not* specialized on context type")
-  (:method ((input end-context) predicate accept-end)
-    (if accept-end
+  (:method ((input end-context) predicate accept-end accept-empty)
+    (if (and accept-end accept-empty)
         (values nil input)
         (values nil nil)))
-  (:method ((input context) predicate accept-end)
+  (:method ((input context) predicate accept-end accept-empty)
     (iter (until (or (end-context-p inp-prime)
                      (funcall predicate (context-peek inp-prime))))
           (for inp-prime initially input then (context-next inp-prime))
@@ -179,8 +179,9 @@
                                 (or (and accept-end (end-context-p inp-prime))
                                     (funcall predicate (context-peek inp-prime))))
                        (values results inp-prime))))))
-  (:method ((input vector-context) predicate accept-end)
+  (:method ((input vector-context) predicate accept-end accept-empty)
     (let ((input-vector (storage-of input)))
+      (check-type input-vector vector)
       (let ((end-position (position-if predicate input-vector :start (position-of input))))
         (cond ((and accept-end (null end-position))
                (values (subseq input-vector (position-of input))
@@ -194,21 +195,22 @@
                                       :position end-position)))
               (t (values nil nil)))))))
 
-(defun gather-if-not* (predicate &key (result-type 'list) (accept-end nil))
+(defun gather-if-not* (predicate &key (result-type 'list) (accept-end nil) (accept-empty nil))
   "Non-backtracking parser: Find a sequence of tokens terminated by one for which predicate returns true, which is not consumed."
   (define-oneshot-result inp is-unread
-    (multiple-value-bind (result new-input) (gather-if-not*-using-context inp predicate accept-end)
+    (multiple-value-bind (result new-input) (gather-if-not*-using-context inp predicate accept-end accept-empty)
       (when new-input
         (make-instance 'parser-possibility
                        :tree (coerce result result-type)
                        :suffix new-input)))))
 
-(defun gather-before-token* (token &key (result-type 'list) (test #'eql) (accept-end nil))
+(defun gather-before-token* (token &key (result-type 'list) (test #'eql) (accept-end nil) (accept-empty nil))
   "Non-backtracking parser: Find a sequence of tokens terminated by single token, which is not consumed."
   (gather-if-not* #'(lambda (input-token)
                       (funcall test input-token token))
                   :result-type result-type
-                  :accept-end accept-end))
+                  :accept-end accept-end
+                  :accept-empty accept-empty))
 
 (defun find-before-token* (p token &key (result-type 'list) (test #'eql))
   "Non-backtracking parser: Find a sequence of p terminated by single token q, which is not consumed."
