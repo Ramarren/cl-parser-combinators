@@ -182,12 +182,12 @@
                (values (subseq input-vector (position-of input))
                        (make-instance 'end-context
                                       :common (common-of input)
-                                      :postion (length input-vector))))
+                                      :position (length input-vector))))
               (end-position
                (values (subseq input-vector (position-of input) end-position)
                        (make-instance 'vector-context
                                       :common (common-of input)
-                                      :postion (length input-vector))))
+                                      :position end-position)))
               (t (values nil nil)))))))
 
 (defun gather-if-not* (predicate &key (result-type 'list) (accept-end nil))
