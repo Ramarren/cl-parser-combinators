@@ -174,7 +174,7 @@
 
 (defparsertest test-gather-before-token*-chain
     (seq-list* (gather-before-token* #\a :result-type 'string :accept-end t)
-               (gather-before-token* #\b :result-type 'string :accept-end t))
+               (gather-before-token* #\b :result-type 'string :accept-end t :accept-empty t))
   ("cccdddaghb" (list "cccddd" "agh") "gthj" (list "gthj" ""))
   ())
 
