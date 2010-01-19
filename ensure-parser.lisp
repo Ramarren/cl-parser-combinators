@@ -34,21 +34,48 @@
   "Parser: accept token char-equal to argument"
   (sat (curry #'char-equal character)))
 
+(defgeneric string?-using-context (input vector test)
+  (:documentation "Implementation of string? specialized on context type. Returns as multiple
+  values result and new context or nil on failure.")
+  (:method ((input context) vector test)
+    (iter (for c in-vector vector)
+          (for inp-iter initially input then (context-next inp-iter))
+          (when (end-context-p inp-iter)
+            (return nil))
+          (for inp-data = (context-peek inp-iter))
+          (unless (funcall test c inp-data)
+            (return (values nil nil)))
+          (finally (return 
+                     (values (context-interval input inp-iter)
+                             inp-iter)))))
+  (:method ((input vector-context) vector test)
+    (let ((input-vector (storage-of input))
+          (l (length vector))
+          (p (position-of input)))
+      (if (> (+ l p)
+             (length input-vector))
+          (values nil nil)
+          (let ((mismatch (mismatch input-vector vector
+                                    :test test
+                                    :start1 p
+                                    :end1 (+ p l))))
+            (if mismatch
+                (values nil nil)
+                (values (subseq input-vector p (+ p l))
+                        (make-instance 'vector-context
+                                       :common (common-of input)
+                                       :position (+ p l)))))))))
+
 (def-cached-arg-parser string? (sequence &key (test #'eql) (result-type 'string))
   "Non-backtracking parser: accept a sequence of elements with equality tested by TEST."
   (let ((vector (coerce sequence 'vector)))
     (define-oneshot-result inp is-unread
-      (iter (for c in-vector vector)
-            (for inp-iter initially inp then (context-next inp-iter))
-            (when (end-context-p inp-iter)
-              (return nil))
-            (for inp-data = (context-peek inp-iter))
-            (unless (funcall test c inp-data)
-              (return nil))
-            (finally (return
-                       (make-instance 'parser-possibility
-                                      :tree (context-interval inp inp-iter result-type)
-                                      :suffix inp-iter)))))))
+      (multiple-value-bind (result new-input)
+          (string?-using-context inp vector test)
+        (when new-input
+          (make-instance 'parser-possibility
+                         :tree (coerce result result-type)
+                         :suffix new-input))))))
 
 (defun ensure-parser (parser)
   (typecase parser

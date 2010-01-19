@@ -95,4 +95,5 @@
            #:named-seq?
            #:seq-list*
            #:named-seq*
-           #:gather-if-not*))
+           #:gather-if-not*)
+  (:export #:string?-using-context))

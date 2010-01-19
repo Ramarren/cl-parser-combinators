@@ -40,11 +40,11 @@
   ("   " "123"))
 
 (defparsertest test-string? (string? (list #\a #\b #\c) :result-type 'list)
-  ("abc" (list #\a #\b #\c))
+  ("abc" (list #\a #\b #\c) "abcd" (list #\a #\b #\c))
   ("cde" "abd" "aBc"))
 
 (defparsertest test-string?-char-equal (string? (list #\a #\b #\c) :test #'char-equal :result-type 'string)
-  ("aBc" "aBc" "ABC" "ABC")
+  ("aBc" "aBc" "ABC" "ABC" "abCd" "abC")
   ("cde" "abd"))
 
 (defparsertest test-many? (many? (letter?))
