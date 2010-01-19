@@ -62,9 +62,13 @@
             (if mismatch
                 (values nil nil)
                 (values (subseq input-vector p (+ p l))
-                        (make-instance 'vector-context
-                                       :common (common-of input)
-                                       :position (+ p l)))))))))
+                        (if (= (+ p l) (length input-vector))
+                            (make-instance 'end-context
+                                           :common (common-of input)
+                                           :position (+ p l))
+                            (make-instance 'vector-context
+                                           :common (common-of input)
+                                           :position (+ p l))))))))))
 
 (def-cached-arg-parser string? (sequence &key (test #'eql) (result-type 'string))
   "Non-backtracking parser: accept a sequence of elements with equality tested by TEST."

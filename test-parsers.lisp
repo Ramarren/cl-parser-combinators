@@ -47,6 +47,9 @@
   ("abcdef" (list "abc" "def") "abcdefgh" (list "abc" "def"))
   ("abcedef"))
 
+(deftest test-string?-endcontext ()
+  (is (null (nth-value 1 (parse-string* "abc" "abc")))))
+
 (defparsertest test-string?-char-equal (string? (list #\a #\b #\c) :test #'char-equal :result-type 'string)
   ("aBc" "aBc" "ABC" "ABC" "abCd" "abC")
   ("cde" "abd"))
