@@ -43,6 +43,10 @@
   ("abc" (list #\a #\b #\c) "abcd" (list #\a #\b #\c))
   ("cde" "abd" "aBc"))
 
+(defparsertest test-string?-chain (seq-list? "abc" "def")
+  ("abcdef" (list "abc" "def") "abcdefgh" (list "abc" "def"))
+  ("abcedef"))
+
 (defparsertest test-string?-char-equal (string? (list #\a #\b #\c) :test #'char-equal :result-type 'string)
   ("aBc" "aBc" "ABC" "ABC" "abCd" "abC")
   ("cde" "abd"))
