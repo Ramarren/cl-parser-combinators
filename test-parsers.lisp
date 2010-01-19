@@ -164,6 +164,24 @@
   ("5" 5 "12" 12 "145" 145 "-56" -56)
   ("a" "b" " "))
 
+(defparsertest test-find-after* (find-after* "ab" "cd")
+  ("abababcd" "cd" "cd" "cd")
+  ("ababab" "adbacd"))
+
+(defparsertest test-gather-before-token* (gather-before-token* #\a :result-type 'string :accept-end t)
+  ("cccddda" "cccddd" "gthj" "gthj")
+  ())
+
+(defparsertest test-gather-before-token*-chain
+    (seq-list* (gather-before-token* #\a :result-type 'string :accept-end t)
+               (gather-before-token* #\b :result-type 'string :accept-end t))
+  ("cccdddaghb" (list "cccddd" "agh") "gthj" (list "gthj" ""))
+  ())
+
+(defparsertest test-find-before-token* (find-before-token* "ab" #\c)
+  ("abababc" (list "ab" "ab" "ab"))
+  ("def"))
+
 (deftest test-memo ()
   (is (equal '(("12" "3") ("12") ("1" "23") ("1" "2" "3") ("1" "2") ("1") NIL)
              (mapcar #'tree-of
