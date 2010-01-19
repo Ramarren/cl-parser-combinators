@@ -165,6 +165,10 @@
 
 (defgeneric gather-if-not*-using-context (input predicate accept-end)
   (:documentation "Parser gather-if-not* specialized on context type")
+  (:method ((input end-context) predicate accept-end)
+    (if accept-end
+        (values nil input)
+        (values nil nil)))
   (:method ((input context) predicate accept-end)
     (iter (until (or (end-context-p inp-prime)
                      (funcall predicate (context-peek inp-prime))))
