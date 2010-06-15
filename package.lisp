@@ -56,6 +56,7 @@
            #:between*
            #:atleast*
            #:make-context
+           #:copy-context
            #:delayed?
            #:<-
            #:make-parse-result
@@ -97,4 +98,11 @@
            #:named-seq*
            #:gather-if-not*)
   (:export #:string?-using-context
-           #:gather-if-not*-using-context))
+           #:gather-if-not*-using-context)
+  ;; some function for creating -using-context parsers from other packages
+  (:export #:storage-of
+           #:common-of
+           #:vector-context
+           #:end-context
+           #:define-oneshot-result
+           #:parser-possibility))
