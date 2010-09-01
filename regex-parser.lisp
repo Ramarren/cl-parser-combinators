@@ -15,25 +15,22 @@
                        :end (if (and limit (<= limit (length (storage-of inp))))
                                 (+ limit (position-of inp))
                                 (length (storage-of inp))))
-      (let ((result
-             (case return-builder
-               ((t) (subseq (storage-of inp) match-start match-end))
-               ((nil) nil)
-               (t (let ((regs (iter (for reg-start in-vector regs-start)
-                                    (for reg-end in-vector regs-end)
-                                    (collect (subseq (storage-of inp) reg-start reg-end)))))
-                    (apply return-builder (subseq (storage-of inp) match-start match-end) regs))))))
-        (if (= match-end (length (storage-of inp)))
-            (values result (make-instance 'end-context
-                                          :common (common-of inp)
-                                          :position (length (storage-of inp))))
-            (values result (make-instance 'vector-context
-                                          :common (common-of inp)
-                                          :position match-end)))))))
+      (when match-start
+        (let ((result
+               (case return-builder
+                 ((t) (subseq (storage-of inp) match-start match-end))
+                 ((nil) nil)
+                 (t (let ((regs (iter (for reg-start in-vector regs-start)
+                                      (for reg-end in-vector regs-end)
+                                      (collect (subseq (storage-of inp) reg-start reg-end)))))
+                      (apply return-builder (subseq (storage-of inp) match-start match-end) regs))))))
+          (if (= match-end (length (storage-of inp)))
+              (values result (make-context-at-position inp (length (storage-of inp))))
+              (values result (make-context-at-position inp :position match-end))))))))
 
 (defun regex* (regex &key (limit nil) (return-builder t))
   "Non-backtracking parser: regular expression is applied to the input, and a result is constructed by return-builder (default will just return the match) from the result and submatches passed as strings. Passing regex-builder as nil will discard the result (use regex only to advance the input)."
-  (let ((compiled-regex (cl-ppcre:create-scanner regex)))
+  (let ((compiled-regex (cl-ppcre:create-scanner `(:sequence :start-anchor (:regex ,regex)))))
     (define-oneshot-result inp is-unread
       (multiple-value-bind (result new-input) (regex*-using-context inp compiled-regex limit return-builder)
         (when new-input
