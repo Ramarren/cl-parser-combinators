@@ -43,7 +43,22 @@
 
 (defgeneric context-peek (context))
 
-(defgeneric context-next (context))
+(defgeneric make-context-at-position (base-context position))
+
+(defmethod make-context-at-position :around ((context context) position)
+  (let ((cache (cache-of context)))
+    (etypecase cache
+      (null (call-next-method))
+      (vector (or (aref cache position)
+                  (setf (aref cache position)
+                        (call-next-method))))
+      (hash-table (or (gethash position cache)
+                      (setf (gethash position cache)
+                            (call-next-method)))))))
+
+(defgeneric context-next (context)
+  (:method  ((context context))
+    (make-context-at-position context (1+ (position-of context)))))
 
 (defgeneric context-equal (context1 context2)
   (:method ((context1 context) (context2 context))
@@ -72,17 +87,6 @@
 
 (defmethod context-peek :after ((context context))
   (update-front-context context))
-
-(defmethod context-next :around ((context context))
-  (let ((cache (cache-of context)))
-    (etypecase cache
-      (null (call-next-method))
-      (vector (or (aref cache (position-of context))
-                  (setf (aref cache (position-of context))
-                        (call-next-method))))
-      (hash-table (or (gethash (position-of context) cache)
-                      (setf (gethash (position-of context) cache)
-                            (call-next-method)))))))
 
 (defgeneric context-interval (context1 context2 &optional result-type)
   (:method :before ((context1 context) (context2 context) &optional result-type)
@@ -118,11 +122,14 @@
 (defclass list-context (context)
   ((storage :accessor storage-of :initarg :storage)))
 
-(defmethod context-next ((context list-context))
-  (let ((new-position (1+ (position-of context))))
-    (if (= new-position (length-of context))
-        (copy-context context 'end-context :position new-position)
-        (copy-context context 'list-context :storage (cdr (storage-of context)) :position new-position))))
+(defmethod make-context-at-position ((base-context list-context) position)
+  (assert (> position (position-of base-context)))
+  (assert (<= position (length-of base-context)))
+  (if (= position (length-of base-context))
+      (copy-context base-context 'end-context :position position)
+      (copy-context base-context 'list-context
+                    :storage (nthcdr (- position (position-of base-context)) (storage-of base-context))
+                    :position position)))
 
 (defmethod context-peek ((context list-context))
   (car (storage-of context)))
@@ -136,11 +143,11 @@
 (defmethod storage-of ((context vector-context))
   (storage-of (common-of context)))
 
-(defmethod context-next ((context vector-context))
-  (let ((new-position (1+ (position-of context))))
-    (if (= new-position (length-of context))
-        (copy-context context 'end-context :position new-position)
-        (copy-context context 'vector-context :position new-position))))
+(defmethod make-context-at-position ((base-context vector-context) position)
+  (assert (<= position (length-of base-context)))
+  (if (= position (length-of base-context))
+      (copy-context base-context 'end-context :position position)
+      (copy-context base-context 'vector-context :position position)))
 
 (defmethod context-peek ((context vector-context))
   (aref (storage-of context) (position-of context)))
@@ -158,7 +165,7 @@
 (defun make-cache (cache-type length)
   (ecase cache-type
     ((nil) nil)
-    (:vector (make-array length :initial-element nil))
+    (:vector (make-array (1+ length) :initial-element nil))
     (:hashtable (make-hash-table))))
 
 (defgeneric make-context (sequence &optional cache-type))
