@@ -201,7 +201,7 @@
     (multiple-value-bind (result new-input) (gather-if-not*-using-context inp predicate accept-end accept-empty)
       (when new-input
         (make-instance 'parser-possibility
-                       :tree (coerce result result-type)
+                       :tree (when result-type (coerce result result-type))
                        :suffix new-input)))))
 
 (defun gather-before-token* (token &key (result-type 'list) (test #'eql) (accept-end nil) (accept-empty nil))
