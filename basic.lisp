@@ -114,7 +114,7 @@
 
 (defun parse-string* (parser string &key (complete nil))
   "Parse a string and return the first result, whether the parse was incomplete, whether it was
-successfull, and the context front as multiple values. The context front is an object containg the
+successful, and the context front as multiple values. The context front is an object containg the
 context latest in the input and a list of lists of parser tags which were current at that point,
 which allows approximate error reporting. It will be nil if the parse is successful and complete.
 
