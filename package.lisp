@@ -105,4 +105,5 @@
            #:vector-context
            #:end-context
            #:define-oneshot-result
+           #:make-context-at-position
            #:parser-possibility))

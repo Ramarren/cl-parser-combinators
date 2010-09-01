@@ -21,7 +21,10 @@
             (while (and result
                         (or (null max)
                             (< count max))))
-            (for inp-prime initially inp then (suffix-of result))
+            (for inp-prime initially inp then
+                 (if (eql inp-prime (suffix-of result))
+                     (error "Subparser in repetition parser didn't advance the input.")
+                     (suffix-of result)))
             (collect result into results)
             (finally (return
                        (when (or (null min)
@@ -185,14 +188,10 @@
       (let ((end-position (position-if predicate input-vector :start (position-of input))))
         (cond ((and accept-end (null end-position))
                (values (subseq input-vector (position-of input))
-                       (make-instance 'end-context
-                                      :common (common-of input)
-                                      :position (length input-vector))))
-              (end-position
+                       (make-context-at-position input (length input-vector))))
+              ((and end-position (or accept-empty (> end-position (position-of input))))
                (values (subseq input-vector (position-of input) end-position)
-                       (make-instance 'vector-context
-                                      :common (common-of input)
-                                      :position end-position)))
+                       (make-context-at-position input end-position)))
               (t (values nil nil)))))))
 
 (defun gather-if-not* (predicate &key (result-type 'list) (accept-end nil) (accept-empty nil))
