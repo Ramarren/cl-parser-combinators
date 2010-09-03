@@ -203,6 +203,13 @@
                        :tree (when result-type (coerce result result-type))
                        :suffix new-input)))))
 
+(defun gather-if* (predicate &key (result-type 'list) (accept-end t) (accept-empty nil))
+  "Non-backtracking parser: Find a sequence of tokens for which predicate returns true."
+  (gather-if-not* (complement predicate)
+                  :result-type result-type
+                  :accept-end accept-end
+                  :accept-empty accept-empty))
+
 (defun gather-before-token* (token &key (result-type 'list) (test #'eql) (accept-end nil) (accept-empty nil))
   "Non-backtracking parser: Find a sequence of tokens terminated by single token, which is not consumed."
   (gather-if-not* #'(lambda (input-token)
