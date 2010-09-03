@@ -53,26 +53,6 @@ parsers."
        (make-instance 'parser-possibility :tree t :suffix inp)))
    "end of input"))
 
-(def-cached-parser digit?
-  "Parser: accept digit character"
-  (sat #'digit-char-p))
-
-(def-cached-parser lower?
-  "Parser: accept lowercase character"
-  (sat #'lower-case-p))
-
-(def-cached-parser upper?
-  "Parser: accept uppercase character"
-  (sat #'upper-case-p))
-
-(def-cached-parser letter?
-  "Parser: accept alphabetic character"
-  (sat #'alpha-char-p))
-
-(def-cached-parser alphanum?
-  "Parser: accept alphanumeric character"
-  (sat #'alphanumericp))
-
 ;;; implement repetition parsers in terms of (between? ...)
 
 (defun between? (parser min max &optional (result-type 'list))
@@ -148,10 +128,6 @@ parsers."
                                             :tree (coerce nil result-type)
                                             :suffix inp))))))))))))
 
-(def-cached-parser word?
-  "Parser: accept a string of alphabetic characters"
-  (between? (letter?) 1 nil 'string))
-
 (defun many? (parser)
   "Parser: accept zero or more repetitions of expression accepted by parser"
   (between? parser nil nil))
@@ -171,12 +147,6 @@ parsers."
 (defun atmost? (parser count)
   "Parser: accept at most count expressions accepted by parser"
   (between? parser nil count))
-
-(defun int? ()
-  "Parser: accept an integer"
-  (mdo (<- f (choice (mdo (char? #\-) (result #'-)) (result #'identity)))
-       (<- n (nat?))
-       (result (funcall f n))))
 
 (defun sepby1? (parser-item parser-separator)
   "Parser: accept at least one of parser-item separated by parser-separator"
@@ -252,14 +222,6 @@ parsers."
                                        right))
                     (for (op . right) in chain)
                     (finally (return left)))))))))
-
-(defun nat? ()
-  "Parser: accept natural numbers"
-  (chainl1? (mdo (<- x (digit?))
-                 (result (digit-char-p x)))
-            (result
-             #'(lambda (x y)
-                 (+ (* 10 x) y)))))
 
 (defun chainr1? (p op)
   "Parser: accept one or more p reduced by result of op with right associativity"

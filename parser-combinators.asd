@@ -17,4 +17,5 @@
                (:file "parsers" :depends-on ("package" "basic" "primitives" "combinators" "ensure-parser" "cache"))
                (:file "memoize" :depends-on ("package" "basic" "ensure-parser"))
                (:file "recurse" :depends-on ("package" "basic" "ensure-parser"))
-               (:file "greedy" :depends-on ("package" "basic" "primitives" "combinators" "ensure-parser" "cache"))))
+               (:file "greedy" :depends-on ("package" "basic" "primitives" "combinators" "ensure-parser" "cache"))
+               (:file "token-parsers" :depends-on ("package" "basic" "primitives" "combinators" "parsers" "greedy"))))
