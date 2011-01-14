@@ -294,9 +294,8 @@ parsers."
                                                         :up node
                                                         :count (1+ count)
                                                         :tree (tree-of result)))))
-                (when (and (emit-of node)
-                           (or (null min)
-                               (>= count min)))
+                (when (or (null min)
+                          (>= count min))
                   (return (make-instance 'parser-possibility
                                          :tree (map result-type #'tree-of (gather-nodes node))
                                          :suffix (suffix-of node))))))))))
