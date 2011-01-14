@@ -1,8 +1,6 @@
 (in-package :parser-combinators-tests)
 
-(in-suite parser-combinators-tests)
-
-(defsuite* basics-tests)
+(defsuite* (basics-tests :in parser-combinators-tests))
 
 (deftest test-parse-string ()
   (let ((parse-result (parse-string (between? #\a nil nil 'string) "aaa")))

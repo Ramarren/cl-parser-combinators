@@ -1,8 +1,6 @@
 (in-package :parser-combinators-tests)
 
-(in-suite parser-combinators-tests)
-
-(defsuite* expression-test)
+(defsuite* (expression-test :in parser-combinators-tests))
 
 ;;; parser for basic +-*/ arithmetic with subexpressions and negation
 

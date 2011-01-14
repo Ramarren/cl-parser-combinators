@@ -1,8 +1,6 @@
 (in-package :parser-combinators-tests)
 
-(in-suite parser-combinators-tests)
-
-(defsuite* arithmetic-test)
+(defsuite* (arithmetic-test :in parser-combinators-tests))
 
 ;;; define parser for basic +-*/ arithmetic on natural numbers (no negatives)
 

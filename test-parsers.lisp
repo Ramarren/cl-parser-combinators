@@ -1,8 +1,6 @@
 (in-package :parser-combinators-tests)
 
-(in-suite parser-combinators-tests)
-
-(defsuite* parsers-tests)
+(defsuite* (parsers-tests :in parser-combinators-tests))
 
 ;;; test for predefined parsers
 ;;; at least some of them, this is boring, write automatic genetor

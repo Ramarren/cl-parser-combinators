@@ -4,7 +4,7 @@
   :maintainer "Jakub Higersberger <ramarren@gmail.com>"
   :author "Jakub Higersberger <ramarren@gmail.com>"
   :licence "BSD-style"
-  :depends-on (:stefil :iterate :alexandria :parser-combinators :infix :bpm)
+  :depends-on (:hu.dwim.stefil :iterate :alexandria :parser-combinators :infix :bpm)
   :components ((:file "test-root")
                (:file "test-basic" :depends-on ("test-root"))
                (:file "test-parsers" :depends-on ("test-root"))
