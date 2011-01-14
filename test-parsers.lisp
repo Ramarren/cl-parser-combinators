@@ -109,16 +109,16 @@
   ("cacbcacab" "ab")
   ("" "cacacbac"))
 
-(defparsertest test-find?-context (named-seq? (find? "aa") "bbaacc")
-  ("aabbaacc")
+(defparsertest test-find?-context (seq-list? (find? "aa") "bbaacc")
+  ("aabbaacc" (list "aa" "bbaacc"))
   ())
 
 (defparsertest test-find* (find* "ab")
   ("cacbcacab" "ab")
   ("" "cacacbac"))
 
-(defparsertest test-find*-context (named-seq* (find* "aa") "bbaacc")
-  ("aabbaacc")
+(defparsertest test-find*-context (seq-list* (find* "aa") "bbaacc")
+  ("aabbaacc" (list "aa" "bbaacc"))
   ())
 
 (defparsertest test-find-after? (find-after? #\c "ab")
