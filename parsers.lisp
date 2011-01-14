@@ -1,5 +1,90 @@
 (in-package :parser-combinators)
 
+(defun seq-list? (&rest parsers)
+  "Parser: Return a list of results of PARSERS."
+  (assert parsers)
+  (let ((parsers (map 'vector #'ensure-parser parsers)))
+    #'(lambda (inp)
+        (let ((continuation-stack (list (funcall (aref parsers 0) inp)))
+              (result-stack nil)
+              (continuation-count 1)
+              (result-count 0)
+              (l (length parsers)))
+          #'(lambda ()
+              (iter (while continuation-stack)
+                    (until (= result-count l))
+                    (let ((next-result (funcall (car continuation-stack))))
+                      (cond ((null next-result)
+                             (pop continuation-stack)
+                             (decf continuation-count)
+                             (pop result-stack)
+                             (decf result-count))
+                            ((= continuation-count l)
+                             (incf result-count)
+                             (push next-result result-stack))
+                            (t
+                             (incf result-count)
+                             (push next-result result-stack)
+                             (incf continuation-count)
+                             (push (funcall (aref parsers result-count)
+                                            (suffix-of next-result))
+                                   continuation-stack))))
+                    (finally
+                     (return
+                       (when result-stack
+                         (let ((result
+                                (make-instance 'parser-possibility
+                                               :tree (mapcar #'tree-of (reverse result-stack))
+                                               :suffix (suffix-of (car result-stack)))))
+                           (decf result-count)
+                           (pop result-stack)
+                           result))))))))))
+
+(defmacro %named-seq? (sequence-parser &rest parser-descriptions)
+  (assert (> (length parser-descriptions) 1))
+  (let ((name-vector (make-array (1- (length parser-descriptions)) :initial-element nil))
+        (parsers nil)
+        (result-form nil)
+        (gensym-list nil))
+    (iter (for description in parser-descriptions)
+          (for i from 0)
+          (cond ((= i (length name-vector))
+                 (setf result-form description))
+                ((and (listp description)
+                      (eql (car description) '<-))
+                 (setf (aref name-vector i) (second description))
+                 (push (third description) parsers))
+                (t
+                 (push description parsers)
+                 (let ((gensym (gensym)))
+                   (push gensym gensym-list)
+                   (setf (aref name-vector i) gensym)))))
+    (with-unique-names (inp continuation seq-parser result)
+      `(let ((,seq-parser (,sequence-parser ,@(nreverse parsers))))
+         #'(lambda (,inp)
+             (let ((,continuation (funcall ,seq-parser ,inp)))
+               #'(lambda ()
+                   (when ,continuation
+                     (let ((,result (funcall ,continuation)))
+                       (if ,result
+                           (destructuring-bind ,(map 'list #'identity name-vector)
+                               (tree-of ,result)
+                             ,@(when gensym-list
+                                 (list `(declare (ignore ,@gensym-list))))
+                             (make-instance 'parser-possibility
+                                            :tree ,result-form
+                                            :suffix (suffix-of ,result)))
+                           (setf ,continuation nil)))))))))))
+
+(defmacro named-seq? (&rest parser-descriptions)
+  "Parser: This is similar to MDO, except that constructed parsers cannot depend on the results of
+previous ones and the final form is not used as a parser, but is automatically used to construct the
+result. All names bound using the (<- name parser) construct are only available in that final form.
+
+This parser generator is useful when full generality of MDO is not necessary, as it is implemented
+non-recursively and has better memory performance."
+  `(%named-seq? seq-list? ,@parser-descriptions))
+
 (defparameter *cut-tag* nil)
 
 (defun tag? (parser format-control &rest format-arguments)
@@ -151,14 +236,14 @@ parsers."
 (defun sepby1? (parser-item parser-separator)
   "Parser: accept at least one of parser-item separated by parser-separator"
   (with-parsers (parser-item parser-separator)
-    (mdo (<- x parser-item)
-         (<- xs (many? (mdo parser-separator (<- y parser-item) (result y))))
-         (result (cons x xs)))))
+    (named-seq? (<- x parser-item)
+                (<- xs (many? (mdo parser-separator (<- y parser-item) (result y))))
+                (cons x xs))))
 
 (defun bracket? (parser-open parser-center parser-close)
   "Parser: accept parser-center bracketed by parser-open and parser-close"
   (with-parsers (parser-open parser-center parser-close)
-    (mdo parser-open (<- xs parser-center) parser-close (result xs))))
+    (named-seq? parser-open (<- xs parser-center) parser-close xs)))
 
 (defun sepby? (parser-item parser-separator)
   "Parser: accept zero or more of parser-item separated by parser-separator"
@@ -171,9 +256,9 @@ parsers."
 (defun sepby1-cons? (p op)
   "Parser: as sepby1, but returns a list of a result of p and pairs (op p). Mainly a component parser for chains"
   (with-parsers (p op)
-    (let ((between-parser (between? (mdo (<- op-result op)
-                                         (<- p-result p)
-                                         (result (cons op-result p-result)))
+    (let ((between-parser (between? (named-seq? (<- op-result op)
+                                                (<- p-result p)
+                                                (cons op-result p-result))
                                     1 nil)))
       #'(lambda (inp)
           (let ((front-continuation (funcall p inp))
@@ -213,30 +298,28 @@ parsers."
   "Parser: accept one or more p reduced by result of op with left associativity"
   (with-parsers (p op)
     (let ((subparser (sepby1-cons? p op)))
-      (mdo (<- chain subparser)
-           (result
-            (destructuring-bind (front . chain) chain
-              (iter (for left initially front
-                         then (funcall op
-                                       left
-                                       right))
-                    (for (op . right) in chain)
-                    (finally (return left)))))))))
+      (named-seq? (<- chain subparser)
+                  (destructuring-bind (front . chain) chain
+                    (iter (for left initially front
+                               then (funcall op
+                                             left
+                                             right))
+                          (for (op . right) in chain)
+                          (finally (return left))))))))
 
 (defun chainr1? (p op)
   "Parser: accept one or more p reduced by result of op with right associativity"
   (with-parsers (p op)
     (let ((subparser (sepby1-cons? p op)))
-      (mdo (<- chain subparser)
-           (result
-            (destructuring-bind (front . chain) chain
-              (iter (with chain = (reverse chain))
-                    (with current-op = (car (car chain)))
-                    (with current-right = (cdr (car chain)))
-                    (for (op . right) in (cdr chain))
-                    (setf current-right (funcall current-op right current-right)
-                          current-op op)
-                    (finally (return (funcall op front current-right))))))))))
+      (named-seq? (<- chain subparser)
+                  (destructuring-bind (front . chain) chain
+                    (iter (with chain = (reverse chain))
+                          (with current-op = (car (car chain)))
+                          (with current-right = (cdr (car chain)))
+                          (for (op . right) in (cdr chain))
+                          (setf current-right (funcall current-op right current-right)
+                                current-op op)
+                          (finally (return (funcall op front current-right)))))))))
 
 (defun chainl? (p op v)
   "Parser: like chainl1?, but will return v if no p can be parsed"
@@ -303,8 +386,9 @@ parsers."
 (defun find-after? (p q)
   "Parser: Find q after some sequence of p, earliest matches first."
   (with-parsers (p q)
-    (mdo (breadth? p nil nil nil)
-         q)))
+    (named-seq? (breadth? p nil nil nil)
+                (<- result q)
+                result)))
 
 (defun find-before? (p q &optional (result-type 'list))
   "Parser: Find a sequence of p terminated by q, doesn't consume q."
@@ -323,11 +407,11 @@ parsers."
                 result))))))
 
 (defun find-after-collect? (p q &optional (result-type 'list))
-  "Parser: Find first q after some sequence of p. Return cons of list of p-results and q"
+  "Parser: Find q after some sequence of p, earliest match first. Return cons of list of p-results and q"
   (with-parsers (p q)
-    (mdo (<- prefix (breadth? p nil nil result-type))
-         (<- q-result q)
-         (result (cons prefix q-result)))))
+    (named-seq? (<- prefix (breadth? p nil nil result-type))
+                (<- q-result q)
+                (cons prefix q-result))))
 
 (defun find? (q)
   "Parser: Find q, earliest match first."
@@ -349,97 +433,12 @@ parsers."
                                  (:left (chainl1? base op))
                                  (:right (chainr1? base op))
                                  (:unary (choice
-                                          (mdo (<- op-fun op)
-                                               (<- subexpr base)
-                                               (result (funcall op-fun subexpr)))
+                                          (named-seq? (<- op-fun op)
+                                                      (<- subexpr base)
+                                                      (funcall op-fun subexpr))
                                           base))))
                      (finally (return base)))))
           (when (and bracket-left bracket-right)
             (setf wrapped-term (choice (bracket? bracket-left expr-parser bracket-right)
                                        term)))
           expr-parser)))))
-
-(defun seq-list? (&rest parsers)
-  "Parser: Return a list of results of PARSERS."
-  (assert parsers)
-  (let ((parsers (map 'vector #'ensure-parser parsers)))
-    #'(lambda (inp)
-        (let ((continuation-stack (list (funcall (aref parsers 0) inp)))
-              (result-stack nil)
-              (continuation-count 1)
-              (result-count 0)
-              (l (length parsers)))
-          #'(lambda ()
-              (iter (while continuation-stack)
-                    (until (= result-count l))
-                    (let ((next-result (funcall (car continuation-stack))))
-                      (cond ((null next-result)
-                             (pop continuation-stack)
-                             (decf continuation-count)
-                             (pop result-stack)
-                             (decf result-count))
-                            ((= continuation-count l)
-                             (incf result-count)
-                             (push next-result result-stack))
-                            (t
-                             (incf result-count)
-                             (push next-result result-stack)
-                             (incf continuation-count)
-                             (push (funcall (aref parsers result-count)
-                                            (suffix-of next-result))
-                                   continuation-stack))))
-                    (finally
-                     (return
-                       (when result-stack
-                         (let ((result
-                                (make-instance 'parser-possibility
-                                               :tree (mapcar #'tree-of (reverse result-stack))
-                                               :suffix (suffix-of (car result-stack)))))
-                           (decf result-count)
-                           (pop result-stack)
-                           result))))))))))
-
-(defmacro %named-seq? (sequence-parser &rest parser-descriptions)
-  (assert (> (length parser-descriptions) 1))
-  (let ((name-vector (make-array (1- (length parser-descriptions)) :initial-element nil))
-        (parsers nil)
-        (result-form nil)
-        (gensym-list nil))
-    (iter (for description in parser-descriptions)
-          (for i from 0)
-          (cond ((= i (length name-vector))
-                 (setf result-form description))
-                ((and (listp description)
-                      (eql (car description) '<-))
-                 (setf (aref name-vector i) (second description))
-                 (push (third description) parsers))
-                (t
-                 (push description parsers)
-                 (let ((gensym (gensym)))
-                   (push gensym gensym-list)
-                   (setf (aref name-vector i) gensym)))))
-    (with-unique-names (inp continuation seq-parser result)
-      `(let ((,seq-parser (,sequence-parser ,@(nreverse parsers))))
-         #'(lambda (,inp)
-             (let ((,continuation (funcall ,seq-parser ,inp)))
-               #'(lambda ()
-                   (when ,continuation
-                     (let ((,result (funcall ,continuation)))
-                       (if ,result
-                           (destructuring-bind ,(map 'list #'identity name-vector)
-                               (tree-of ,result)
-                             ,@(when gensym-list
-                                 (list `(declare (ignore ,@gensym-list))))
-                             (make-instance 'parser-possibility
-                                            :tree ,result-form
-                                            :suffix (suffix-of ,result)))
-                           (setf ,continuation nil)))))))))))
-
-(defmacro named-seq? (&rest parser-descriptions)
-  "Parser: This is similar to MDO, except that constructed parsers cannot depend on the results of
-previous ones and the final form is not used as a parser, but is automatically used to construct the
-result. All names bound using the (<- name parser) construct are only available in that final form.
-
-This parser generator is useful when full generality of MDO is not necessary, as it is implemented
-non-recursively and has better memory performance."
-  `(%named-seq? seq-list? ,@parser-descriptions))

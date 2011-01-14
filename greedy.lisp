@@ -2,6 +2,32 @@
 
 ;;; greedy version of repetition combinators
 
+(defun seq-list* (&rest parsers)
+  "Non-backtracking parser: Return a list of result of PARSERS."
+  (assert parsers)
+  (let ((parsers (map 'vector #'ensure-parser parsers)))
+    (define-oneshot-result inp is-unread
+      (iter (for parser in-vector parsers)
+            (for inp-prime initially inp then (suffix-of result))
+            (for result = (funcall (funcall parser inp-prime)))
+            (while result)
+            (collect result into results)
+            (finally (return
+                       (when result
+                         (make-instance 'parser-possibility
+                                        :tree (mapcar #'tree-of results)
+                                        :suffix (suffix-of result)))))))))
+
+(defmacro named-seq* (&rest parser-descriptions)
+  "Non-backtracking parser: This is similar to MDO, except that constructed parsers cannot depend on
+the results of previous ones and the final form is not used as a parser, but is automatically used
+to construct the result. All names bound using the (<- name parser) construct are only available in
+that final form.
+
+This parser generator is useful when full generality of MDO is not necessary, as it is implemented
+non-recursively and has better memory performance."
+  `(%named-seq? seq-list* ,@parser-descriptions))
+
 (defun between* (parser min max &optional (result-type 'list))
   "Non-backtracking parser: find the first, longest chain of expression accepted by parser of length between min and max"
   (assert (or (null min)
@@ -52,11 +78,11 @@
 (defun sepby1* (parser-item parser-separator)
   "Non-backtracking parser: accept as many as possible of parser-item separated by parser-separator, but at least one."
   (with-parsers (parser-item parser-separator)
-    (mdo (<- x parser-item)
-         (<- xs (many* (mdo parser-separator
-                            (<- y parser-item)
-                            (result y))))
-         (result (cons x xs)))))
+    (named-seq* (<- x parser-item)
+                (<- xs (many* (named-seq* parser-separator
+                                          (<- y parser-item)
+                                          y)))
+                (cons x xs))))
 
 (defun sepby* (parser-item parser-separator)
   "Non-backtracking parser: accept as many as possible of parser-item separated by parser-separator."
@@ -90,17 +116,17 @@
 
 (defun nat* ()
   "Non-backtracking parser: accept natural number, consuming as many digits as possible"
-  (chainl1* (mdo (<- x (digit?))
-                 (result (digit-char-p x)))
+  (chainl1* (named-seq* (<- x (digit?))
+                        (digit-char-p x))
             (result
              #'(lambda (x y)
                  (+ (* 10 x) y)))))
 
 (defun int* ()
   "Non-backtracking parser: accept integer, consuming as many digits as possible"
-  (mdo (<- f (choice1 (mdo (char? #\-) (result #'-)) (result #'identity)))
-       (<- n (nat*))
-       (result (funcall f n))))
+  (named-seq* (<- f (choice1 (mdo (char? #\-) (result #'-)) (result #'identity)))
+              (<- n (nat*))
+              (funcall f n)))
 
 (defun chainr1* (p op)
   "Non-backtracking parser: accept as many as possible, but at least one of p, reduced by result of op with right associativity"
@@ -283,38 +309,12 @@
                                  (:left (chainl1* base op))
                                  (:right (chainr1* base op))
                                  (:unary (choice1
-                                          (mdo (<- op-fun op)
-                                               (<- subexpr base)
-                                               (result (funcall op-fun subexpr)))
+                                          (named-seq* (<- op-fun op)
+                                                      (<- subexpr base)
+                                                      (funcall op-fun subexpr))
                                           base))))
                      (finally (return base)))))
           (when (and bracket-left bracket-right)
             (setf wrapped-term (choice1 (bracket? bracket-left expr-parser bracket-right)
                                         term)))
           expr-parser)))))
-
-(defun seq-list* (&rest parsers)
-  "Non-backtracking parser: Return a list of result of PARSERS."
-  (assert parsers)
-  (let ((parsers (map 'vector #'ensure-parser parsers)))
-    (define-oneshot-result inp is-unread
-      (iter (for parser in-vector parsers)
-            (for inp-prime initially inp then (suffix-of result))
-            (for result = (funcall (funcall parser inp-prime)))
-            (while result)
-            (collect result into results)
-            (finally (return
-                       (when result
-                         (make-instance 'parser-possibility
-                                        :tree (mapcar #'tree-of results)
-                                        :suffix (suffix-of result)))))))))
-
-(defmacro named-seq* (&rest parser-descriptions)
-  "Non-backtracking parser: This is similar to MDO, except that constructed parsers cannot depend on
-the results of previous ones and the final form is not used as a parser, but is automatically used
-to construct the result. All names bound using the (<- name parser) construct are only available in
-that final form.
-
-This parser generator is useful when full generality of MDO is not necessary, as it is implemented
-non-recursively and has better memory performance."
-  `(%named-seq? seq-list* ,@parser-descriptions))
