@@ -301,7 +301,7 @@ parsers."
                                          :suffix (suffix-of node))))))))))
 
 (defun find-after? (p q)
-  "Parser: Find first q after some sequence of p."
+  "Parser: Find q after some sequence of p, earliest matches first."
   (with-parsers (p q)
     (mdo (breadth? p nil nil nil)
          q)))
@@ -330,7 +330,7 @@ parsers."
          (result (cons prefix q-result)))))
 
 (defun find? (q)
-  "Parser: Find first q"
+  "Parser: Find q, earliest match first."
   (with-parsers (q)
     (find-after? (item) q)))
 
