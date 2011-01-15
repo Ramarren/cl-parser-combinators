@@ -40,17 +40,17 @@
 (defun collapse-ops (op-tree)
   (labels ((collapse-top (op-tree)
              (match op-tree
-               ((_op (_op . _inner) . _outer)
-                (collapse-ops (list* _op (mapcar #'collapse-ops (append _inner _outer)))))
-               (_thing
-                _thing))))
+               ((like-when (list* op1 (cons op2 inner) outer) (eql op1 op2))
+                (collapse-ops (list* op1 (mapcar #'collapse-ops (append inner outer)))))
+               (thing
+                thing))))
     (match op-tree
-      ((_op (_op . _inner) . _outer)
-       (collapse-top (list* _op (mapcar #'collapse-ops (append _inner _outer)))))
-      ((_op . _args)
-       (collapse-top (list* _op (mapcar #'collapse-ops _args))))
-      (_thing
-       _thing))))
+      ((like-when (list* op1 (cons op2 inner) outer) (eql op1 op2))
+       (collapse-top (list* op1 (mapcar #'collapse-ops (append inner outer)))))
+      ((cons op args)
+       (collapse-top (list* op (mapcar #'collapse-ops args))))
+      (thing
+       thing))))
 
 (deftest test-random-arith ()
   (iter (repeat 100)
