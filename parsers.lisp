@@ -418,6 +418,11 @@ parsers."
   (with-parsers (q)
     (find-after? (item) q)))
 
+(defun hook? (function p)
+  "Parser: apply function to result of p"
+  (with-parsers (p)
+    (named-seq? (<- result p) (funcall function result))))
+
 (defun expression? (term operators &optional (bracket-left nil) (bracket-right nil))
   "Parser: Reduce a sequence of terms with unary/binary operators with precedence.
  OPERATORS is a list of (op-parser :left/:right/:unary), where OP-PARSER is a parser consuming

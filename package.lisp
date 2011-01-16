@@ -81,6 +81,7 @@
            #:find-after*
            #:find*
            #:find?
+           #:hook?
            #:parse-string*
            #:find-before?
            #:find-before*

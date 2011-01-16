@@ -260,3 +260,7 @@
                                            (list a 'b c))
   ("abc" '(#\a b #\c))
   ("acb"))
+
+(defparsertest test-hook? (hook? #'1+ (nat*))
+  ("5" 6 "28" 29)
+  ("aa"))
