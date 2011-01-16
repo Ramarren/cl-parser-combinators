@@ -264,3 +264,11 @@
 (defparsertest test-hook? (hook? #'1+ (nat*))
   ("5" 6 "28" 29)
   ("aa"))
+
+(defparsertest test-opt? (named-seq? (<- a "a") (<- b (opt? "b")) (<- c "c") (list a b c))
+  ("abc" '(#\a #\b #\c) "ac" '(#\a nil #\c))
+  ("abbc" "aabc"))
+
+(defparsertest test-opt* (named-seq* (<- a "a") (<- b (opt* "b")) (<- c "c") (list a b c))
+  ("abc" '(#\a #\b #\c) "ac" '(#\a nil #\c))
+  ("abbc" "aabc"))

@@ -294,6 +294,10 @@ non-recursively and has better memory performance."
   "Non-backtracking parser: Find first q"
   (find-after* (item) q))
 
+(defun opt* (p)
+  "Non-backtracking parser: result of p or nil"
+  (choice1 p (result nil)))
+
 (defun expression* (term operators &optional (bracket-left nil) (bracket-right nil))
   "Non-backtracking parser: Reduce a sequence of terms with unary/binary operators with precedence.
  OPERATORS is a list of (op-parser :left/:right/:unary), where OP-PARSER is a parser consuming

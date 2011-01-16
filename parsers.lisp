@@ -423,6 +423,10 @@ parsers."
   (with-parsers (p)
     (named-seq? (<- result p) (funcall function result))))
 
+(defun opt? (p)
+  "Parser: result of p or nil"
+  (choice p (result nil)))
+
 (defun expression? (term operators &optional (bracket-left nil) (bracket-right nil))
   "Parser: Reduce a sequence of terms with unary/binary operators with precedence.
  OPERATORS is a list of (op-parser :left/:right/:unary), where OP-PARSER is a parser consuming
