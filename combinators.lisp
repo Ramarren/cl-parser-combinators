@@ -27,13 +27,11 @@
                                 (setf p-parse-continuation nil))))))
             result)))))
 
-(defmacro bind (parser parser-generator) ; results in parser-promise
-  `(let ((parser ,parser)
-         (parser-generator ,parser-generator))
-     #'(lambda (inp)
-         (execute-bind inp
-                       parser
-                       parser-generator))))
+(defun bind (parser parser-generator)
+  #'(lambda (inp)
+      (execute-bind inp
+                    parser
+                    parser-generator)))
 
 (defun execute-choice (inp parser1 parser2)
   (let ((continuation-1 (funcall parser1 inp))
@@ -53,33 +51,32 @@
                  result))
               (t nil)))))
 
-(defmacro choice (parser1 parser2)
+(defun choice (parser1 parser2)
   "Combinator: all alternatives from two parsers"
-  `(let ((parser1 (ensure-parser ,parser1))
-         (parser2 (ensure-parser ,parser2)))
+  (let ((parser1 (ensure-parser parser1))
+        (parser2 (ensure-parser parser2)))
      #'(lambda (inp)
          (execute-choice inp parser1 parser2))))
 
-(defmacro choice1 (parser1 parser2)
+(defun choice1 (parser1 parser2)
   "Combinator: one alternative from two parsers"
-  `(let ((parser1 (ensure-parser ,parser1))
-         (parser2 (ensure-parser ,parser2)))
-     (define-oneshot-result inp is-unread
-       (funcall (execute-choice inp
-                                parser1
-                                parser2)))))
+  (let ((parser1 (ensure-parser parser1))
+        (parser2 (ensure-parser parser2)))
+    (define-oneshot-result inp is-unread
+      (funcall (execute-choice inp
+                               parser1
+                               parser2)))))
 
-(defmacro choices (&rest parser-list)
+(defun choices (&rest parser-list)
   "Combinator: all alternatives from multiple parsers"
   (if (cdr parser-list)
-      `(choice ,(car parser-list)
-               (choices ,@(cdr parser-list)))
+      (choice (car parser-list)
+              (apply #'choices (cdr parser-list)))
       (car parser-list)))
 
-(defmacro choices1 (&rest parser-list)
+(defun choices1 (&rest parser-list)
   "Combinator: one alternative from multiple parsers"
-  `(let ((parser-list (list ,@parser-list)))
-     (define-oneshot-result inp is-unread
-       (iter (for p in parser-list)
-             (for result = (funcall (funcall (ensure-parser p) inp)))
-             (thereis result)))))
+  (define-oneshot-result inp is-unread
+    (iter (for p in parser-list)
+          (for result = (funcall (funcall (ensure-parser p) inp)))
+          (thereis result))))
