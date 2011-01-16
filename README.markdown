@@ -39,7 +39,7 @@ Most places which expect a parser will also accept any non-function object (a fu
 
 `bind parser parser-generator` takes a parser, a function of one argument which generates a parser and returns a parser which applies a first component parsers on input, constructs a second parser by giving a return value of the first to the generator function and then applies that second parser to the input, for every possible parses of both parsers. Component parsers are only called as necessary. This is not a very good explanation, but this is more simple that it sounds.
 
-`mdo &rest specs` is a wrapper over bind, loosely based on Haskell `do` syntax sugar. It can be used to compose a series of parsers, optionally binding their results to some names. The result of parser such constructed is the result of the final parser, which in most cases will be a `result` primitive parser using names established previously. See `parsers.lisp` for examples.
+`mdo &rest specs` is a wrapper over bind, loosely based on Haskell `do` syntax sugar. It can be used to compose a series of parsers, optionally binding their results to some names. Those results can be used when constructing all following parsers. The result of parser such constructed is the result of the final parser, which in most cases will be a `result` primitive parser using names established previously. In cases where the parsers do not depends on results of previous parsers (other than position in the input) `named-seq?/*` are more appropriate.
 
 `choice parser1 parser2` returns all results of the first parser and then all results of the second parser. `choices &rest parsers` does the same for any number of parsers.
 
