@@ -235,20 +235,17 @@ parsers."
 
 (defun sepby1? (parser-item parser-separator)
   "Parser: accept at least one of parser-item separated by parser-separator"
-  (with-parsers (parser-item parser-separator)
-    (named-seq? (<- x parser-item)
-                (<- xs (many? (mdo parser-separator (<- y parser-item) (result y))))
-                (cons x xs))))
+  (named-seq? (<- x parser-item)
+              (<- xs (many? (mdo parser-separator (<- y parser-item) (result y))))
+              (cons x xs)))
 
 (defun bracket? (parser-open parser-center parser-close)
   "Parser: accept parser-center bracketed by parser-open and parser-close"
-  (with-parsers (parser-open parser-center parser-close)
-    (named-seq? parser-open (<- xs parser-center) parser-close xs)))
+  (named-seq? parser-open (<- xs parser-center) parser-close xs))
 
 (defun sepby? (parser-item parser-separator)
   "Parser: accept zero or more of parser-item separated by parser-separator"
-  (with-parsers (parser-item parser-separator)
-    (choice (sepby1? parser-item parser-separator) (result nil))))
+  (choice (sepby1? parser-item parser-separator) (result nil)))
 
 ;; since all intermediate results have to be kept anyway for backtracking, they might be just as
 ;; well be kept not on the stack, so chainl/r1? can be implemented in terms of between? as well
@@ -323,17 +320,15 @@ parsers."
 
 (defun chainl? (p op v)
   "Parser: like chainl1?, but will return v if no p can be parsed"
-  (with-parsers (p op)
-    (choice
-     (chainl1? p op)
-     (result v))))
+  (choice
+   (chainl1? p op)
+   (result v)))
 
 (defun chainr? (p op v)
   "Parser: like chainr1?, but will return v if no p can be parsed"
-  (with-parsers (p op)
-    (choice
-     (chainr1? p op)
-     (result v))))
+  (choice
+   (chainr1? p op)
+   (result v)))
 
 (defclass result-node (parser-possibility)
   ((emit :initarg :emit :initform t :accessor emit-of)
@@ -385,10 +380,9 @@ parsers."
 
 (defun find-after? (p q)
   "Parser: Find q after some sequence of p, earliest matches first."
-  (with-parsers (p q)
-    (named-seq? (breadth? p nil nil nil)
-                (<- result q)
-                result)))
+  (named-seq? (breadth? p nil nil nil)
+              (<- result q)
+              result))
 
 (defun find-before? (p q &optional (result-type 'list))
   "Parser: Find a sequence of p terminated by q, doesn't consume q."
@@ -408,25 +402,21 @@ parsers."
 
 (defun find-after-collect? (p q &optional (result-type 'list))
   "Parser: Find q after some sequence of p, earliest match first. Return cons of list of p-results and q"
-  (with-parsers (p q)
-    (named-seq? (<- prefix (breadth? p nil nil result-type))
-                (<- q-result q)
-                (cons prefix q-result))))
+  (named-seq? (<- prefix (breadth? p nil nil result-type))
+              (<- q-result q)
+              (cons prefix q-result)))
 
 (defun find? (q)
   "Parser: Find q, earliest match first."
-  (with-parsers (q)
-    (find-after? (item) q)))
+  (find-after? (item) q))
 
 (defun hook? (function p)
   "Parser: apply function to result of p"
-  (with-parsers (p)
-    (named-seq? (<- result p) (funcall function result))))
+  (named-seq? (<- result p) (funcall function result)))
 
 (defun chook? (result p)
   "Parser: return result if p matches"
-  (with-parsers (p)
-    (named-seq? p result)))
+  (named-seq? p result))
 
 (defun opt? (p)
   "Parser: result of p or nil"

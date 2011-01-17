@@ -77,18 +77,16 @@ non-recursively and has better memory performance."
 
 (defun sepby1* (parser-item parser-separator)
   "Non-backtracking parser: accept as many as possible of parser-item separated by parser-separator, but at least one."
-  (with-parsers (parser-item parser-separator)
-    (named-seq* (<- x parser-item)
-                (<- xs (many* (named-seq* parser-separator
-                                          (<- y parser-item)
-                                          y)))
-                (cons x xs))))
+  (named-seq* (<- x parser-item)
+              (<- xs (many* (named-seq* parser-separator
+                                        (<- y parser-item)
+                                        y)))
+              (cons x xs)))
 
 (defun sepby* (parser-item parser-separator)
   "Non-backtracking parser: accept as many as possible of parser-item separated by parser-separator."
-  (with-parsers (parser-item parser-separator)
-    (choice1 (sepby1* parser-item parser-separator)
-             (result nil))))
+  (choice1 (sepby1* parser-item parser-separator)
+           (result nil)))
 
 (defun chainl1* (p op)
   "Non-backtracking parser: accept as many as possible, but at least one of p, reduced by result of op with left associativity"
@@ -162,17 +160,15 @@ non-recursively and has better memory performance."
 
 (defun chainl* (p op v)
   "Non-backtracking parser: like chainl1*, but will return v if no p can be parsed"
-  (with-parsers (p op)
-    (choice1
-     (chainl1* p op)
-     (result v))))
+  (choice1
+   (chainl1* p op)
+   (result v)))
 
 (defun chainr* (p op v)
   "Non-backtracking parser: like chainr1*, but will return v if no p can be parsed"
-  (with-parsers (p op)
-    (choice1
-     (chainr1* p op)
-     (result v))))
+  (choice1
+   (chainr1* p op)
+   (result v)))
 
 (def-cached-arg-parser times* (parser count)
     "Non-backtracking parser: accept exactly count expressions accepted by parser, without backtracking."
