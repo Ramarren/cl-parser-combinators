@@ -449,7 +449,7 @@ parsers."
 
 (defun nested? (p &key (min nil) (max nil) (result-type 'list) (bracket-left #\() (bracket-right #\)))
   "Parser: parse a sequence of p, like between?, but with p possibly nested in brackets."
-  (with-parsers (p)
+  (with-parsers (p bracket-left bracket-right)
     (let ((wrapped-term p))
       (labels ((term-wrapper (inp)
                  (funcall wrapped-term inp)))
