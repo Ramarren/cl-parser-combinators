@@ -446,3 +446,15 @@ parsers."
             (setf wrapped-term (choice (bracket? bracket-left expr-parser bracket-right)
                                        term)))
           expr-parser)))))
+
+(defun nested? (p &key (min nil) (max nil) (result-type 'list) (bracket-left #\() (bracket-right #\)))
+  "Parser: parse a sequence of p, like between?, but with p possibly nested in brackets."
+  (with-parsers (p)
+    (let ((wrapped-term p))
+      (labels ((term-wrapper (inp)
+                 (funcall wrapped-term inp)))
+        (let ((nested-parser (between? #'term-wrapper min max result-type)))
+          (when (and bracket-left bracket-right)
+            (setf wrapped-term (choice (bracket? bracket-left nested-parser bracket-right)
+                                       wrapped-term)))
+          nested-parser)))))

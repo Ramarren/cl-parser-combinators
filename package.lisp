@@ -69,6 +69,7 @@
            #:find-after-collect?
            #:find-after-collect*
            #:breadth?
+           #:nested?
            #:expression?
            #:expression*
            #:context-interval

@@ -276,3 +276,8 @@
 (defparsertest test-opt* (named-seq* (<- a "a") (<- b (opt* "b")) (<- c "c") (list a b c))
   ("abc" '(#\a #\b #\c) "ac" '(#\a nil #\c))
   ("abbc" "aabc"))
+
+(defparsertest test-nested? (nested? "A" :min 1)
+  ("AA(A(AA)A)A" '(#\A #\A (#\A (#\A #\A) #\A) #\A)
+   "AAAA" '(#\A #\A #\A #\A))
+  ("BAF"))
