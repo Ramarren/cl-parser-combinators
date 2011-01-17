@@ -422,6 +422,29 @@ parsers."
   "Parser: result of p or nil"
   (choice p (result nil)))
 
+(defmacro named? (name &body body)
+  "Parser macro: give BODY a NAME, so it can refer to itself without causing generator recursion."
+  (with-unique-names (parser wrapped inp)
+    `(let ((,wrapped (zero)))
+       (let ((,name
+              #'(lambda (,inp)
+                  (funcall ,wrapped ,inp))))
+         (let ((,parser
+                ,@body))
+           (setf ,wrapped ,parser)
+           ,parser)))))
+
+(defun nested? (p &key (min nil) (max nil) (result-type 'list) (bracket-left #\() (bracket-right #\)))
+  "Parser: parse a sequence of p, like between?, but with p possibly nested in brackets."
+  (if (and bracket-left bracket-right)
+      (named? nested-parser
+        (between? (choice (bracket? bracket-left nested-parser bracket-right)
+                          p)
+                  min
+                  max
+                  result-type))
+      (between? p min max result-type)))
+
 (defun expression? (term operators &optional (bracket-left nil) (bracket-right nil))
   "Parser: Reduce a sequence of terms with unary/binary operators with precedence.
  OPERATORS is a list of (op-parser :left/:right/:unary), where OP-PARSER is a parser consuming
@@ -446,15 +469,3 @@ parsers."
             (setf wrapped-term (choice (bracket? bracket-left expr-parser bracket-right)
                                        term)))
           expr-parser)))))
-
-(defun nested? (p &key (min nil) (max nil) (result-type 'list) (bracket-left #\() (bracket-right #\)))
-  "Parser: parse a sequence of p, like between?, but with p possibly nested in brackets."
-  (with-parsers (p bracket-left bracket-right)
-    (let ((wrapped-term p))
-      (labels ((term-wrapper (inp)
-                 (funcall wrapped-term inp)))
-        (let ((nested-parser (between? #'term-wrapper min max result-type)))
-          (when (and bracket-left bracket-right)
-            (setf wrapped-term (choice (bracket? bracket-left nested-parser bracket-right)
-                                       wrapped-term)))
-          nested-parser)))))

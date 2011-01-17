@@ -70,6 +70,7 @@
            #:find-after-collect*
            #:breadth?
            #:nested?
+           #:named?
            #:expression?
            #:expression*
            #:context-interval
