@@ -265,6 +265,10 @@
   ("5" 6 "28" 29)
   ("aa"))
 
+(defparsertest test-chook? (chook? 5 "abc")
+  ("abc" 5)
+  ("bac"))
+
 (defparsertest test-opt? (named-seq? (<- a "a") (<- b (opt? "b")) (<- c "c") (list a b c))
   ("abc" '(#\a #\b #\c) "ac" '(#\a nil #\c))
   ("abbc" "aabc"))

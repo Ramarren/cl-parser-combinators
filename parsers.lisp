@@ -423,6 +423,11 @@ parsers."
   (with-parsers (p)
     (named-seq? (<- result p) (funcall function result))))
 
+(defun chook? (result p)
+  "Parser: return result if p matches"
+  (with-parsers (p)
+    (named-seq? p result)))
+
 (defun opt? (p)
   "Parser: result of p or nil"
   (choice p (result nil)))
