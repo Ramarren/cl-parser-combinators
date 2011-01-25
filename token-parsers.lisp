@@ -26,13 +26,14 @@
 
 (def-cached-arg-parser whitespace? (&key (result-type nil) (accept-empty nil))
   "Parser: accept a sequence of whitespace characters."
-  (gather-if* (rcurry #'member '(#\Space #\Newline #\	))
-              :result-type result-type
-              :accept-empty accept-empty))
+  (between? (sat (rcurry #'member '(#\Space #\Newline #\	)))
+            (if accept-empty nil 1)
+            nil
+             result-type))
 
 (def-cached-parser word?
   "Parser: accept a string of alphabetic characters"
-  (gather-if* #'alpha-char-p :result-type 'string))
+  (between? (alphanum?) 1 nil 'string))
 
 ;; naive implementation using monadic combinators, unfortunately rather slow
 ;; (defun int? ()

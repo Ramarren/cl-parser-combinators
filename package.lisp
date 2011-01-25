@@ -18,6 +18,9 @@
            #:letter?
            #:alphanum?
            #:word?
+           #:word*
+           #:whitespace?
+           #:whitespace*
            #:string?
            #:many?
            #:many1?

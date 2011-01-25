@@ -112,6 +112,16 @@ non-recursively and has better memory performance."
                                       :tree init-x :suffix inp))))))
       (bind p #'rest-chain))))
 
+(def-cached-arg-parser whitespace* (&key (result-type nil) (accept-empty nil))
+  "Non-backtracking parser: accept a sequence of whitespace characters."
+  (gather-if* (rcurry #'member '(#\Space #\Newline #\	))
+              :result-type result-type
+              :accept-empty accept-empty))
+
+(def-cached-parser word*
+  "Parser: accept a string of alphabetic characters"
+  (gather-if* #'alpha-char-p :result-type 'string))
+
 (defun nat* (&optional (radix 10))
   "Non-backtracking parser: accept natural number, consuming as many digits as possible"
   (named-seq* (<- number (gather-if* (rcurry #'digit-char-p radix) :result-type 'string))
