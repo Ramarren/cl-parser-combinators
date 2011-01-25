@@ -23,6 +23,8 @@ The most common entry point for parsing is the =parse-string*= function. It is a
 
 The =parse-string*= function takes as an arguments a parser and a sequence. It also takes a =&key= argument =:complete=, which, if =t=, means that only a parse that consumes all the input is considered a success, and the parser will be backtracked until such a result is found or it fails. It returns multiple values. The primary is the parsing result, the secondary indicates whether it was incomplete, third if it was successful (in case =NIL=, which is normally returned on failure, can also be a result of the parse) and finally an object which registers additional state indicating where the parsing stopped if it was incomplete or failed.
 
+A result of a parser can be an arbitrary object. But, since the parsing process involves backtracking and a certain degree of lazy evaluation, using mutation of objects or global environment is not reliable. If creation of more complex objects during parsing is desired a functional datastructres library is necessary. This is especially important when dealing with cross-cutting references, which might require holding a significant amount of transient state before they are merged at higher level.
+
 ** Elementary parsers
 
 The most basic parsers are literal parsers. A literal or a sequence, passed where a parser is expected[fn:1], will create a parser which matches that object literally. This gives the most trivial example:
