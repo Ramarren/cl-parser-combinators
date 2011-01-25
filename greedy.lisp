@@ -112,13 +112,10 @@ non-recursively and has better memory performance."
                                       :tree init-x :suffix inp))))))
       (bind p #'rest-chain))))
 
-(defun nat* ()
+(defun nat* (&optional (radix 10))
   "Non-backtracking parser: accept natural number, consuming as many digits as possible"
-  (chainl1* (named-seq* (<- x (digit?))
-                        (digit-char-p x))
-            (result
-             #'(lambda (x y)
-                 (+ (* 10 x) y)))))
+  (named-seq* (<- number (gather-if* (rcurry #'digit-char-p radix) :result-type 'string))
+   (parse-integer number :radix radix)))
 
 (defun int* ()
   "Non-backtracking parser: accept integer, consuming as many digits as possible"

@@ -43,8 +43,10 @@
 
 (def-cached-arg-parser nat? (&optional (radix 10))
   "Parser: accept natural numbers"
-  (named-seq* (<- number (gather-if* #'digit-char-p :result-type 'string))
-   (parse-integer number)))
+  (named-seq? (<- number (between? (sat (rcurry #'digit-char-p radix))
+                                   1 nil
+                                   'string))
+   (parse-integer number :radix radix)))
 
 (def-cached-arg-parser int? (&optional (radix 10))
   "Parser: accept an integer, return as integer."

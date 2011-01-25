@@ -97,6 +97,10 @@
   ("1" 1 "23" 23)
   ("-1"))
 
+(defparsertest test-nat?2 (seq-list? (nat?) "15")
+  ("1015" '(10 "15"))
+  ())
+
 (defparsertest test-chainl1? (chainl1? (digit?) (result #'list))
   ("123" (list (list #\1  #\2) #\3))
   (""))
