@@ -51,10 +51,11 @@
 (def-cached-arg-parser int? (&optional (radix 10))
   "Parser: accept an integer, return as integer."
   (named-seq*
-   (<- sign (choice (between* #\- 0 1)
-                    (between* #\+ 0 1)))
-   (<- number (nat?))
-   (let ((sign (if (or (null sign) (eql (car sign) #\+))
+   (<- sign (choices #\-
+                     #\+
+                     (result #\+)))
+   (<- number (nat? radix))
+   (let ((sign (if (eql sign #\+)
                    1
                    -1)))
      (* sign number))))

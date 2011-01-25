@@ -117,11 +117,11 @@ non-recursively and has better memory performance."
   (named-seq* (<- number (gather-if* (rcurry #'digit-char-p radix) :result-type 'string))
    (parse-integer number :radix radix)))
 
-(defun int* ()
+(defun int* (&optional (radix 10))
   "Non-backtracking parser: accept integer, consuming as many digits as possible"
-  (named-seq* (<- f (choice1 (mdo (char? #\-) (result #'-)) (result #'identity)))
-              (<- n (nat*))
-              (funcall f n)))
+  (named-seq* (<- sign (choices1 #\+ #\- (result #\+)))
+              (<- n (nat* radix))
+              (* (if (eql sign #\+) 1 -1) n)))
 
 (defun chainr1* (p op)
   "Non-backtracking parser: accept as many as possible, but at least one of p, reduced by result of op with right associativity"
