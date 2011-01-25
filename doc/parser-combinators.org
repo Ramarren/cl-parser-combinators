@@ -1,0 +1,176 @@
+#+TITLE: parser-combinators documentation
+#+AUTHOR: Jakub Higersberger
+#+EMAIL: ramarren@gmail.com
+* Introductory notes
+
+The =parser-combinators= library is a library implementing monadic parser combinators in Common Lisp, similar in concept to Haskell Parsec system. It does not include advanced optimizations and error handling routines, since those require transforming the generated parsers into LL(1) form while retaining as much generality as possible, which is beyond the ambitions of this project. The usage patterns are also somewhat different due to Common Lisp being less focused on functional approach and eager semantics.
+
+Master repository is on [[https://github.com/Ramarren/cl-parser-combinators/][GitHub/Ramarren/cl-parser-combinators]]. Note that system name is =parser-combinators=, without the =cl= prefix. It can be obtained by checking it out using [[http://git-scm.com/][git]] or downloading an automatic [[http://github.com/Ramarren/cl-parser-combinators/tarball/master][tarball]]. Refer to [[http://common-lisp.net/project/asdf/asdf/][ASDF]] manual how to make the system locatable and load it. All dependencies are available in [[http://www.quicklisp.org/][quicklisp]], and hopefully this system will become available the in the future.
+
+All questions and comments are welcome. If you have any please email me at [[mailto:ramarren@gmail.com][ramarren@gmail.com]].
+
+* Tutorial
+
+In general, a parser is a program that transforms a linear sequence of tokens into a complex, usually hierarchical representation. Parser combinators allow construction of more complex parsers from simple parsers, which allows the parsing problem to be decomposed into small units, making it easier to write, test and maintain. Monadic parser combination allows handling arbitrary context-free grammars through backtracking and generating parsers depending on results of other parsers.
+
+An important point is that due to the necessity of backtracking, the input sequence must be entirely in memory. Parsing streams is impossible. Lazy sequences are in principle possible, with some caveats, but not implemented. The input sequence can be a list or a vector of arbitrary elements. The focus is on strings (vectors of characters), but the system will work as well on, for example, a vector of bytes or a list of structured tokens, like a result of a lexing pass.
+
+Note: Most mentioned functions have their own documentation strings. I don't duplicate those details and argument lists here.
+
+** Using parsers
+
+The most common entry point for parsing is the =parse-string*= function. It is a specialized form of =parse-string= which will return a single parse result, which is the usual requirement. The more general form is useful mostly if the grammar is ambiguous and obtaining all possible parsers for external postprocessing is required.
+
+The =parse-string*= function takes as an arguments a parser and a sequence. It also takes a =&key= argument =:complete=, which, if =t=, means that only a parse that consumes all the input is considered a success, and the parser will be backtracked until such a result is found or it fails. It returns multiple values. The primary is the parsing result, the secondary indicates whether it was incomplete, third if it was successful (in case =NIL=, which is normally returned on failure, can also be a result of the parse) and finally an object which registers additional state indicating where the parsing stopped if it was incomplete or failed.
+
+** Elementary parsers
+
+The most basic parsers are literal parsers. A literal or a sequence, passed where a parser is expected[fn:1], will create a parser which matches that object literally. This gives the most trivial example:
+
+[fn:1] In this system a parser is a function, and there is no way to differentiate a non-parser function from a parser function. So literal function objects cannot be matched this way.
+
+#+BEGIN_EXAMPLE
+CL-USER> (parse-string* "ABC" "ABC")
+"ABC"
+NIL
+T
+NIL
+CL-USER> (parse-string* "ABC" '(#\A #\B #\C))
+"ABC"
+NIL
+T
+NIL
+CL-USER> (parse-string* "ABC" "ABD")
+NIL
+NIL
+NIL
+#<PARSER-COMBINATORS::CONTEXT-FRONT {AAAB041}>
+#+END_EXAMPLE
+
+The parser created from the string "ABC" matches a string "ABC", as well as a list of it's characters, but doesn't match a different string.
+
+Most other parsers are obtained by calling parser generating functions[fn:2]. Conventionally most of these functions included in this library end either a question mark or a star. The former are fully backtracking, while the latter don't backtrack, in order to obtain additional performance if the grammar is known to be unambiguous. There are some exceptions, most notably =sat=, which takes a predicate and returns a parsers which accepts an item for which the predicate is true, and core combinators.
+
+[fn:2] Since parsers are functions, and in SBCL at least it is not possible to have anonymous functions assigned to variables, even constant parsers are obtained this way.
+
+** Core combinators
+
+The most basic elements of any grammar are sequences and alternatives. While coming from Haskell/Parsec it might seem natural to use =bind= to express the former, it is usually an overkill and due to more verbose lambda syntax in Common Lisp it is fairly clunky. For this reason =bind= is not part of the exported interface.
+
+*** Sequences
+
+The basic sequence combinators are =seq-list?= and =named-seq?=, and their non-backtracking counterparts =seq-list*= and =named-seq*=. Note that, like their repetition cousins described later, the backtracking cutoff affects the argument parsers as well, at least at their top level. This means that the star variants normally shouldn't be use unless all the argument parsers are either non-backtracking or locally unambiguous as well.
+
+The function =seq-list?= just takes a number of other parsers, and returns their results as a list. The more complex =named-seq?= macro takes a special syntax which can be used to give the elements of the sequence a name, and the final argument is a form which will be evaluated only if all parsers succeed in a scope where those names are bound to their results. The syntax of the arguments is either a raw parser, or a three element list in the form of =(<- name parser)=, where =<-= symbol is a syntactic marker.
+
+#+BEGIN_EXAMPLE
+CL-USER> (parse-string* (named-seq? (<- a "1") (<- b "2") (<- c "3") (list c a b)) "123")
+(#\3 #\1 #\2)
+NIL
+T
+NIL
+#+END_EXAMPLE
+
+An important limitation is that the names are visible only in the final, result form. Parser generating forms do not see those variables, and hence cannot depend on the results of previous parsers, other that obviously the position in the input and the fact that previous parsers all had to succeed. While this is a limitation, it makes it much easier to implement with an explicit stack, and also makes it possible to pre-initialize all argument parsers. If possible, one should use =named-seq?= or =named-seq*= for expressing basic sequences.
+
+On the other hand it is not always possible. If the elements of a sequence do depend on the previous elements of a sequence an =MDO= macro can be used, which employs the parser monadic =bind= operation. The syntax is similar to =names-seq?= macro, except that the results *are* visible for parser creation functions which occur later in the form, and the last form is not special. The macro will return the result of the final parser, which commonly will be a parser created with =result= function, which generates a parser which consumes no input and returns its argument.
+
+Example (using =item= parser generator function, which consumes a single item from the input and returns it):
+#+BEGIN_EXAMPLE
+CL-USER> (parse-string* (mdo (<- x (item)) x x x (result (format nil "4 times ~a" x))) "aaaa")
+"4 times a"
+NIL
+T
+NIL
+CL-USER> (parse-string* (mdo (<- x (item)) x x x (result (format nil "4 times ~a" x))) "bbbb")
+"4 times b"
+NIL
+T
+NIL
+CL-USER> (parse-string* (mdo (<- x (item)) x x x (result (format nil "4 times ~a" x))) "bbbc")
+NIL
+NIL
+NIL
+#<PARSER-COMBINATORS::CONTEXT-FRONT {BA6FB49}>
+#+END_EXAMPLE
+
+*** Alternatives
+
+Basic alternatives are expressed using choice operators. There are four of them: =choice=, =choices=, =choice1= and =choices1=, where the plural forms are variable argument functions which reduce to their singular forms. The difference between =choice= and =choice1= is that the former will backtrack, returning both results if required, and the latter will fail if the first result is rejected. Again, use the non-backtracking form only if the arguments are unambiguous.
+
+#+BEGIN_EXAMPLE
+CL-USER> (parse-string* (choice #\a #\b) "a")
+#\a
+NIL
+T
+NIL
+CL-USER> (parse-string* (choice #\a #\b) "b")
+#\b
+NIL
+T
+NIL
+#+END_EXAMPLE
+
+** Repetition combinators
+
+From those core combinators more complex combinators can be constructed[fn:3]. Most basic of those are repetition combinators, which take a parser and perhaps some additional information and return a sequence of matches. Most general repetition operators are =between?= and =breadth?=. They both take a parser, a minimal and maximal number of occurrences, either of which can be =nil=, and optionally a type of the result sequence (a list by default).
+
+[fn:3] Although many built-in combinators are implemented manually with an explicit stack for performance reasons.
+
+The difference between them is that =between?= will attempt to consume as many matches as possible, unless forced otherwise by backtracking, while =breadth?= will attempt to consume as few as possible, again, unless forced otherwise by backtracking. In most cases the former is more useful. Usually, more specific forms should be used, like =opt?=, =many?=, =many1?=, =times?=, =atleast?= and =atmost?=. See their docstrings for details, but they are fairly obvious specializations. Those have a non-backtracking versions, except obviously =breadth?=, but the same note as with sequence combinators matters, only the first result of the argument parser will ever be used.
+
+** Token parsers
+There are some predefined parsers for common tokens. See their docstrings for details. The built in token parsers are: =digit?=, =lower?=, =upper?=, =letter?=, =alphanum?=, =whitespace?=, =word?=, =nat?=, =int?=, =quoted?=. Most of those have non-backtracking versions.
+
+** Structured repetition
+There are some built-in parsers which proved some common repetition patterns. If there are any other general and common patters, please submit them. The preexisting ones are =sepby1?=, =sepby?= and =bracket?=. Example:
+
+#+BEGIN_EXAMPLE
+CL-USER> (parse-string* (bracket? #\[ (sepby? (int?) #\,) #\])
+               "[17,22,34]")
+(17 22 34)
+NIL
+T
+NIL
+#+END_EXAMPLE
+
+** Finding
+Sometimes it is desirable to skip part of the input string until a match can be found. The =find?= family of parser combinators achieves this. The most basic is =find?= itself, which skips input until a match can be found. The =find-after?= will only skip patterns given by its first argument, and the return the result of the second argument parser. The =find-after-collect?= will collect the skipped items and cons them to the result of the primary parser. The =find-before?= will collect the skipped items, and return them as a sequence, ignoring the second argument. That is useful if the terminator is part of some other pattern.
+** Bulk repetition
+While in principle similar to non-backtracking =find?= versions (which also exists), there is a set of =gather= combinators, which are not only non-backtracking, but also specialized on input from. This makes them faster, but limited. The =gather-before-token*=, =gather-if*= and =gather-if-not*= operate on input sequence element level and so can traverse it without using the normally necessary context instrumentation. This can be a significant performance gain for recognizing bulk data delimited by single element terminator.
+** Chains
+A more complex form of structured repetition are chains. Combinators =chainl1?= and =chainr1?= take an item parser, and an operator parser, which should return a function which will be used to reduce the sequence. The former applies the reduction with left associativity, and the latter with right associativity. The most basic application is to transform an infix operators to prefix operators. The file =test-arithmetic= shows how to use this to parse basic arithmetic expressions. This [[https://gist.github.com/784387][gist]] shows an example where the =chainl1?= operator is used to merge graphs representing molecule fragments in SMILES language.
+** Expressions
+The generalization of chains is =expression?= parser generator, which can create a parser for recursive expressions with multiple operators with different associativity and subexpressions. See the =test-expression.lisp= file for example of simple arithmetic parser.
+** Recursion and parser initialization
+The library attempts to initialize the parsers as much as possible when they are created. This includes constructing all subparsers. This is a problem for recursive parsers, since it will cause an infinite recursion in the parser construction stage. If no built-in structured combinators fits the problem, there are two ways to solve this.
+
+One is to delay the construction of the parser until it is needed. This can also be useful if the parser requires significant precomputation and might not be used. This can achieved either by using =delayed?= macro, or as a non-first argument to =mdo=.
+
+The other method introduces an indirection, which allows the recursive parser to be initialized once. The =named?= macro will give a name to its body, which then can be passed and called at some lower level. Once more, this [[https://gist.github.com/784387][gist]] shows an example. While this requires passing the recursive parser as an argument to the point where it is used, this saves the cost of recreating the parser multiple times and makes the recursion explicit, so it is a preferred approach.
+* Other concepts
+** Primitive parsers
+
+=(zero)= is a parser generator for a parser which represents a parsing failure
+
+=(result v)= is a parser generator for a parser which doesn't modify the input and returns =v=
+
+=(item)= is a parser generator for a parser which consumes and returns one item from the input
+
+** Backtracking
+*** Modifiers
+Modifier =force?= makes a parser which is identical to its argument, but is fully executed, that is, does not perform further parsing lazily.
+
+Modifier =cut?= discards all the results but the first, preventing backtracking.
+** Contexts
+
+The context protocol is used to abstract the input sequence. Vectors and lists are fully implemented. Unless handlers for new types of input are desired, this is not usually relevant to end users.
+
+*** Context intervals
+A part of context protocol that might be most useful to the end user of the library are the =context-interval= method and the =context?= parser generator, which consumes no input and captures context of the point. By capturing two such contexts and using =context-interval= a subsequence can be located efficiently. This is useful if a pattern is relevant only for recognition, and not actual parsing.
+** Error handling
+Error handling for parser combinators is generally hard, since failure to parse causes backtracking, and it is impossible in general to differentiate a proper backtracking from error in the parser or the input. Some basic ways to deal with are to factor the parser into small units and vigorously unit test them, and to make parsers which are liberal in what they accept as long as it is unambiguous. Using a hierarchical parser (at least separate lexing/parsing pass for languages with obvious tokens) might be helpful a well.
+
+One way to approximately locate the place where the parsing failed is to examine the quaternary return value of the =parse-string*= function. It is a =context-front= object, and calling a =position-of= method on it will show the most advances position in the input which was touched during parsing. There is no guarantee that this will be the location of an actual error, but it often is at least near.
+
+-----
