@@ -1,15 +1,14 @@
 # parser-combinators
 
-This is an experimental implementation of [parser combinators](http://en.wikipedia.org/wiki/Parser_combinators) for Common Lisp. This is mostly inspired by Parsec, but without any optimizations. Parser combinators are, in theory, an elegant form of constructing parsers for context-free grammars.
+This is an experimental implementation of [parser combinators](http://en.wikipedia.org/wiki/Parser_combinators) for Common Lisp. This is mostly inspired by Parsec, but with limited optimizations. Parser combinators are, in theory, an elegant form of constructing parsers for context-free grammars.
 
-It more or less works, but was not tested for any but the simplest cases, some parts of the interface are clunky, it is quite slow in general and probably has a tendency for exponential explosions. That said, it could probably be used to parse small amounts of data, especially if applied hierarchically. Comments welcome.
-
-I have found this more convenient than regular expressions in some cases, especially where maximum performace is not required.
-
+The name of the system is `parser-combinators`, despite the name of the GitHub repository. The library is fairly lightly tested. Any comments or questions on the functionality or performance are welcome.
 # Dependencies
 
 - iterate
 - alexandria
+
+The test suite has some additional dependencies, all of which are in [quicklisp](http://www.quicklisp.org/)
 
 # Usage
 
@@ -49,11 +48,9 @@ Most places which expect a parser will also accept any non-function object (a fu
 
 `force? parser` makes a parser which is identical to its argument, but is fully executed, that is, does not perform further parsing lazily.
 
+`cut? parser` discard all the results but the first, preventing backtracking.
+
 `delayed? parser` creates a parser which will be constructed only when called, once. This is useful only for left-recursive parsers, which otherwhise would cause infinite recursion.
-
-`memoize? parser &optional label` creates a parser which will be memoized using label. Label makes it possible to memoize the same parser from multiple places.
-
-`curtail? parser &optional label` creates a curtailed parser. That is, recursive calls to this parser will fail if recursion depth is greater than remaining input length, since at that point success is no longer possible. This is mostly useful, together with `delayed?` modifier to handle left-recursive grammars. Obviously, this incurs a performance penalty.
 
 ### basic parsers
 

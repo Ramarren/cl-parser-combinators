@@ -42,6 +42,10 @@
               (when all-results
                 (pop all-results)))))))
 
+(defun cut? (parser)
+  "Parser modifier: discard all results but the first"
+  (choice1 parser (zero)))
+
 (defmacro delayed? (parser)
   "Parser modifier macro: parser will be built when called. This is necessary for left-recursive parsers."
   `(let ((parser-cache nil))
