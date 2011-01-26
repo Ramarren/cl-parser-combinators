@@ -7,7 +7,7 @@ lang="en" xml:lang="en">
 <title>parser-combinators documentation</title>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
 <meta name="generator" content="Org-mode"/>
-<meta name="generated" content="2011-01-25 15:33:43 CET"/>
+<meta name="generated" content="2011-01-26 08:42:20 CET"/>
 <meta name="author" content="Jakub Higersberger"/>
 <meta name="description" content=""/>
 <meta name="keywords" content=""/>
@@ -99,14 +99,15 @@ lang="en" xml:lang="en">
 <li><a href="#sec-2_3_2">2.3.2 Alternatives </a></li>
 </ul>
 </li>
-<li><a href="#sec-2_4">2.4 Repetition combinators </a></li>
-<li><a href="#sec-2_5">2.5 Token parsers </a></li>
-<li><a href="#sec-2_6">2.6 Structured repetition </a></li>
-<li><a href="#sec-2_7">2.7 Finding </a></li>
-<li><a href="#sec-2_8">2.8 Bulk repetition </a></li>
-<li><a href="#sec-2_9">2.9 Chains </a></li>
-<li><a href="#sec-2_10">2.10 Expressions </a></li>
-<li><a href="#sec-2_11">2.11 Recursion and parser initialization </a></li>
+<li><a href="#sec-2_4">2.4 Backtracking and ambiguity </a></li>
+<li><a href="#sec-2_5">2.5 Repetition combinators </a></li>
+<li><a href="#sec-2_6">2.6 Token parsers </a></li>
+<li><a href="#sec-2_7">2.7 Structured repetition </a></li>
+<li><a href="#sec-2_8">2.8 Finding </a></li>
+<li><a href="#sec-2_9">2.9 Bulk repetition </a></li>
+<li><a href="#sec-2_10">2.10 Chains </a></li>
+<li><a href="#sec-2_11">2.11 Expressions </a></li>
+<li><a href="#sec-2_12">2.12 Recursion and parser initialization </a></li>
 </ul>
 </li>
 <li><a href="#sec-3">3 Other concepts </a>
@@ -174,6 +175,9 @@ The most common entry point for parsing is the <code>parse-string*</code> functi
 </p>
 <p>
 The <code>parse-string*</code> function takes as an arguments a parser and a sequence. It also takes a <code>&amp;key</code> argument <code>:complete</code>, which, if <code>t</code>, means that only a parse that consumes all the input is considered a success, and the parser will be backtracked until such a result is found or it fails. It returns multiple values. The primary is the parsing result, the secondary indicates whether it was incomplete, third if it was successful (in case <code>NIL</code>, which is normally returned on failure, can also be a result of the parse) and finally an object which registers additional state indicating where the parsing stopped if it was incomplete or failed.
+</p>
+<p>
+A result of a parser can be an arbitrary object. But, since the parsing process involves backtracking and a certain degree of lazy evaluation, using mutation of objects or global environment is not reliable. If creation of more complex objects during parsing is desired a functional datastructres library is necessary. This is especially important when dealing with cross-cutting references, which might require holding a significant amount of transient state before they are merged at higher level.
 </p>
 </div>
 
@@ -318,12 +322,69 @@ NIL
 </div>
 
 <div id="outline-container-2_4" class="outline-3">
-<h3 id="sec-2_4"><span class="section-number-3">2.4</span> Repetition combinators </h3>
+<h3 id="sec-2_4"><span class="section-number-3">2.4</span> Backtracking and ambiguity </h3>
 <div class="outline-text-3" id="text-2_4">
+
+<p>With core combinators introduced in previous section, backtracking can now be explained in more detail. Backtracking is a way for parser combinators to deal with ambiguity resulting from necessity of considering context, in particular context resulting from parsing items which occur after an ambiguous pattern occurs. This method allows creation of parsers for more general grammars than many parser generators which are limited to, usually, one-character look-ahead. This of course comes with a time and memory cost, but on the other hand allows the parsers to be expressed more declaratively.
+</p>
+<p>
+Consider an example:
+</p>
+
+
+<pre class="example">CL-USER&gt; (parse-string* (seq-list? (choice "aaa" "aa")
+                                   "aaa")
+                        "aaaaa")
+("aa" "aaa")
+</pre>
+
 
 
 <p>
-From those core combinators more complex combinators can be constructed<sup><a class="footref" name="fnr.3" href="#fn.3">3</a></sup>. Most basic of those are repetition combinators, which take a parser and perhaps some additional information and return a sequence of matches. Most general repetition operators are <code>between?</code> and <code>breadth?</code>. They both take a parser, a minimal and maximal number of occurrences, either of which can be <code>nil</code>, and optionally a type of the result sequence (a list by default).
+Note that the first argument is ambiguous, since when looking at the input locally, both "aaa" and "aa" match the pattern. A way to make the correct choice is necessary.
+</p>
+<p>
+What occurs here is that the first argument to <code>seq-list?</code> matches "aaa" first, then the second argument attempts to match and fails, since it runs out of letters "a". When that happens, since <code>seq-list?</code> is a backtracking parser, backtracking occurs, and other possibilities from previous parsers are considered. In this case, the first argument second choice is taken, "aa", and this allows the second argument to match, and the whole parser to succeed.
+</p>
+<p>
+When ordering choices it is important to put the most likely possibility first, to save as much backtracking as possible. Occasionally, especially when matching literals, putting longest patterns first might be a good idea as well, if there is a possibility that some shorter ones can be a prefix of longer ones.
+</p>
+<p>
+As mentioned above, sometimes a parser is just ambiguous and we are interested in all possible parsers. In this case the <code>parse-string</code> function is useful<sup><a class="footref" name="fnr.3" href="#fn.3">3</a></sup>. An example:
+</p>
+
+
+<pre class="example">CL-USER&gt; (parse-string (seq-list? (choice "aaa" "aa")
+                                  (choice "aaa" "aa"))
+                       "aaaaa")
+#&lt;PARSER-COMBINATORS::PARSE-RESULT {B1F1061}&gt;
+#&lt;PARSER-COMBINATORS::CONTEXT-FRONT {B1EDFF1}&gt;
+CL-USER&gt; (defparameter *results* (gather-results *))
+*RESULTS*
+CL-USER&gt; (mapcar #'tree-of *results*)
+(("aaa" "aa") ("aa" "aaa") ("aa" "aa"))
+CL-USER&gt; (mapcar #'suffix-of *results*)
+(#&lt;END-CONTEXT {BB2CC41}&gt; #&lt;END-CONTEXT {BB2CDE9}&gt; #&lt;VECTOR-CONTEXT {BB2CED1}&gt;)
+</pre>
+
+
+
+<p>
+The function <code>gather-results</code> takes the <code>parse-result</code> object and generates all possible results. There are also <code>current-result</code> and <code>next-result</code>, which can be used to access result sequentially. Parsing occurs lazily, so every result requires more parsing, although usually partial. Note that this means that backtracking/parsing state are not released until the <code>parse-result</code> object is garbage collected.
+</p>
+<p>
+In this case we see that there are three possible parses, two of them consume the whole input (<code>suffix-of</code> gives the remaining input from the result, and in this case first two give <code>end-context</code>), and one has some input remaining. Having multiple results is usually not useful, but occasionally it might be desired to pick one of them by external analysis. This is also useful for testing, since this way one can see all possible backtracks that can be made from a component parser on some test input.
+</p></div>
+
+</div>
+
+<div id="outline-container-2_5" class="outline-3">
+<h3 id="sec-2_5"><span class="section-number-3">2.5</span> Repetition combinators </h3>
+<div class="outline-text-3" id="text-2_5">
+
+
+<p>
+From those core combinators more complex combinators can be constructed<sup><a class="footref" name="fnr.4" href="#fn.4">4</a></sup>. Most basic of those are repetition combinators, which take a parser and perhaps some additional information and return a sequence of matches. Most general repetition operators are <code>between?</code> and <code>breadth?</code>. They both take a parser, a minimal and maximal number of occurrences, either of which can be <code>nil</code>, and optionally a type of the result sequence (a list by default).
 </p>
 <p>
 The difference between them is that <code>between?</code> will attempt to consume as many matches as possible, unless forced otherwise by backtracking, while <code>breadth?</code> will attempt to consume as few as possible, again, unless forced otherwise by backtracking. In most cases the former is more useful. Usually, more specific forms should be used, like <code>opt?</code>, <code>many?</code>, <code>many1?</code>, <code>times?</code>, <code>atleast?</code> and <code>atmost?</code>. See their docstrings for details, but they are fairly obvious specializations. Those have a non-backtracking versions, except obviously <code>breadth?</code>, but the same note as with sequence combinators matters, only the first result of the argument parser will ever be used.
@@ -332,9 +393,9 @@ The difference between them is that <code>between?</code> will attempt to consum
 
 </div>
 
-<div id="outline-container-2_5" class="outline-3">
-<h3 id="sec-2_5"><span class="section-number-3">2.5</span> Token parsers </h3>
-<div class="outline-text-3" id="text-2_5">
+<div id="outline-container-2_6" class="outline-3">
+<h3 id="sec-2_6"><span class="section-number-3">2.6</span> Token parsers </h3>
+<div class="outline-text-3" id="text-2_6">
 
 <p>There are some predefined parsers for common tokens. See their docstrings for details. The built in token parsers are: <code>digit?</code>, <code>lower?</code>, <code>upper?</code>, <code>letter?</code>, <code>alphanum?</code>, <code>whitespace?</code>, <code>word?</code>, <code>nat?</code>, <code>int?</code>, <code>quoted?</code>. Most of those have non-backtracking versions.
 </p>
@@ -342,9 +403,9 @@ The difference between them is that <code>between?</code> will attempt to consum
 
 </div>
 
-<div id="outline-container-2_6" class="outline-3">
-<h3 id="sec-2_6"><span class="section-number-3">2.6</span> Structured repetition </h3>
-<div class="outline-text-3" id="text-2_6">
+<div id="outline-container-2_7" class="outline-3">
+<h3 id="sec-2_7"><span class="section-number-3">2.7</span> Structured repetition </h3>
+<div class="outline-text-3" id="text-2_7">
 
 <p>There are some built-in parsers which proved some common repetition patterns. If there are any other general and common patters, please submit them. The preexisting ones are <code>sepby1?</code>, <code>sepby?</code> and <code>bracket?</code>. Example:
 </p>
@@ -365,45 +426,45 @@ NIL
 
 </div>
 
-<div id="outline-container-2_7" class="outline-3">
-<h3 id="sec-2_7"><span class="section-number-3">2.7</span> Finding </h3>
-<div class="outline-text-3" id="text-2_7">
+<div id="outline-container-2_8" class="outline-3">
+<h3 id="sec-2_8"><span class="section-number-3">2.8</span> Finding </h3>
+<div class="outline-text-3" id="text-2_8">
 
 <p>Sometimes it is desirable to skip part of the input string until a match can be found. The <code>find?</code> family of parser combinators achieves this. The most basic is <code>find?</code> itself, which skips input until a match can be found. The <code>find-after?</code> will only skip patterns given by its first argument, and the return the result of the second argument parser. The <code>find-after-collect?</code> will collect the skipped items and cons them to the result of the primary parser. The <code>find-before?</code> will collect the skipped items, and return them as a sequence, ignoring the second argument. That is useful if the terminator is part of some other pattern.
 </p></div>
 
 </div>
 
-<div id="outline-container-2_8" class="outline-3">
-<h3 id="sec-2_8"><span class="section-number-3">2.8</span> Bulk repetition </h3>
-<div class="outline-text-3" id="text-2_8">
+<div id="outline-container-2_9" class="outline-3">
+<h3 id="sec-2_9"><span class="section-number-3">2.9</span> Bulk repetition </h3>
+<div class="outline-text-3" id="text-2_9">
 
 <p>While in principle similar to non-backtracking <code>find?</code> versions (which also exists), there is a set of <code>gather</code> combinators, which are not only non-backtracking, but also specialized on input from. This makes them faster, but limited. The <code>gather-before-token*</code>, <code>gather-if*</code> and <code>gather-if-not*</code> operate on input sequence element level and so can traverse it without using the normally necessary context instrumentation. This can be a significant performance gain for recognizing bulk data delimited by single element terminator.
 </p></div>
 
 </div>
 
-<div id="outline-container-2_9" class="outline-3">
-<h3 id="sec-2_9"><span class="section-number-3">2.9</span> Chains </h3>
-<div class="outline-text-3" id="text-2_9">
+<div id="outline-container-2_10" class="outline-3">
+<h3 id="sec-2_10"><span class="section-number-3">2.10</span> Chains </h3>
+<div class="outline-text-3" id="text-2_10">
 
 <p>A more complex form of structured repetition are chains. Combinators <code>chainl1?</code> and <code>chainr1?</code> take an item parser, and an operator parser, which should return a function which will be used to reduce the sequence. The former applies the reduction with left associativity, and the latter with right associativity. The most basic application is to transform an infix operators to prefix operators. The file <code>test-arithmetic</code> shows how to use this to parse basic arithmetic expressions. This <a href="https://gist.github.com/784387">gist</a> shows an example where the <code>chainl1?</code> operator is used to merge graphs representing molecule fragments in SMILES language.
 </p></div>
 
 </div>
 
-<div id="outline-container-2_10" class="outline-3">
-<h3 id="sec-2_10"><span class="section-number-3">2.10</span> Expressions </h3>
-<div class="outline-text-3" id="text-2_10">
+<div id="outline-container-2_11" class="outline-3">
+<h3 id="sec-2_11"><span class="section-number-3">2.11</span> Expressions </h3>
+<div class="outline-text-3" id="text-2_11">
 
 <p>The generalization of chains is <code>expression?</code> parser generator, which can create a parser for recursive expressions with multiple operators with different associativity and subexpressions. See the <code>test-expression.lisp</code> file for example of simple arithmetic parser.
 </p></div>
 
 </div>
 
-<div id="outline-container-2_11" class="outline-3">
-<h3 id="sec-2_11"><span class="section-number-3">2.11</span> Recursion and parser initialization </h3>
-<div class="outline-text-3" id="text-2_11">
+<div id="outline-container-2_12" class="outline-3">
+<h3 id="sec-2_12"><span class="section-number-3">2.12</span> Recursion and parser initialization </h3>
+<div class="outline-text-3" id="text-2_12">
 
 <p>The library attempts to initialize the parsers as much as possible when they are created. This includes constructing all subparsers. This is a problem for recursive parsers, since it will cause an infinite recursion in the parser construction stage. If no built-in structured combinators fits the problem, there are two ways to solve this.
 </p>
@@ -498,6 +559,7 @@ One way to approximately locate the place where the parsing failed is to examine
 
 
 
+
 </div>
 </div>
 </div>
@@ -508,14 +570,16 @@ One way to approximately locate the place where the parsing failed is to examine
 </p>
 <p class="footnote"><sup><a class="footnum" name="fn.2" href="#fnr.2">2</a></sup> Since parsers are functions, and in SBCL at least it is not possible to have anonymous functions assigned to variables, even constant parsers are obtained this way.
 </p>
-<p class="footnote"><sup><a class="footnum" name="fn.3" href="#fnr.3">3</a></sup> Although many built-in combinators are implemented manually with an explicit stack for performance reasons.
+<p class="footnote"><sup><a class="footnum" name="fn.3" href="#fnr.3">3</a></sup> Not technically necessary, since one can call the parser manually. But why would anyone want to do that?
+</p>
+<p class="footnote"><sup><a class="footnum" name="fn.4" href="#fnr.4">4</a></sup> Although many built-in combinators are implemented manually with an explicit stack for performance reasons.
 </p>
 </div>
 </div>
 <div id="postamble">
 <p class="author"> Author: Jakub Higersberger
 </p>
-<p class="date"> Date: 2011-01-25 15:33:43 CET</p>
+<p class="date"> Date: 2011-01-26 08:42:20 CET</p>
 <p class="creator">HTML generated by org-mode 7.4 in emacs 23</p>
 </div>
 </div>

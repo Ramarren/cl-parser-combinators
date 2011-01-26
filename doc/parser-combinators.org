@@ -113,11 +113,48 @@ T
 NIL
 #+END_EXAMPLE
 
+** Backtracking and ambiguity
+With core combinators introduced in previous section, backtracking can now be explained in more detail. Backtracking is a way for parser combinators to deal with ambiguity resulting from necessity of considering context, in particular context resulting from parsing items which occur after an ambiguous pattern occurs. This method allows creation of parsers for more general grammars than many parser generators which are limited to, usually, one-character look-ahead. This of course comes with a time and memory cost, but on the other hand allows the parsers to be expressed more declaratively.
+
+Consider an example:
+#+BEGIN_EXAMPLE
+CL-USER> (parse-string* (seq-list? (choice "aaa" "aa")
+                                   "aaa")
+                        "aaaaa")
+("aa" "aaa")
+#+END_EXAMPLE
+
+Note that the first argument is ambiguous, since when looking at the input locally, both "aaa" and "aa" match the pattern. A way to make the correct choice is necessary.
+
+What occurs here is that the first argument to =seq-list?= matches "aaa" first, then the second argument attempts to match and fails, since it runs out of letters "a". When that happens, since =seq-list?= is a backtracking parser, backtracking occurs, and other possibilities from previous parsers are considered. In this case, the first argument second choice is taken, "aa", and this allows the second argument to match, and the whole parser to succeed.
+
+When ordering choices it is important to put the most likely possibility first, to save as much backtracking as possible. Occasionally, especially when matching literals, putting longest patterns first might be a good idea as well, if there is a possibility that some shorter ones can be a prefix of longer ones.
+
+As mentioned above, sometimes a parser is just ambiguous and we are interested in all possible parsers. In this case the =parse-string= function is useful[fn:3]. An example:
+#+BEGIN_EXAMPLE
+CL-USER> (parse-string (seq-list? (choice "aaa" "aa")
+                                  (choice "aaa" "aa"))
+                       "aaaaa")
+#<PARSER-COMBINATORS::PARSE-RESULT {B1F1061}>
+#<PARSER-COMBINATORS::CONTEXT-FRONT {B1EDFF1}>
+CL-USER> (defparameter *results* (gather-results *))
+*RESULTS*
+CL-USER> (mapcar #'tree-of *results*)
+(("aaa" "aa") ("aa" "aaa") ("aa" "aa"))
+CL-USER> (mapcar #'suffix-of *results*)
+(#<END-CONTEXT {BB2CC41}> #<END-CONTEXT {BB2CDE9}> #<VECTOR-CONTEXT {BB2CED1}>)
+#+END_EXAMPLE
+
+The function =gather-results= takes the =parse-result= object and generates all possible results. There are also =current-result= and =next-result=, which can be used to access result sequentially. Parsing occurs lazily, so every result requires more parsing, although usually partial. Note that this means that backtracking/parsing state are not released until the =parse-result= object is garbage collected.
+
+In this case we see that there are three possible parses, two of them consume the whole input (=suffix-of= gives the remaining input from the result, and in this case first two give =end-context=), and one has some input remaining. Having multiple results is usually not useful, but occasionally it might be desired to pick one of them by external analysis. This is also useful for testing, since this way one can see all possible backtracks that can be made from a component parser on some test input.
+
+[fn:3] Not technically necessary, since one can call the parser manually. But why would anyone want to do that?
 ** Repetition combinators
 
-From those core combinators more complex combinators can be constructed[fn:3]. Most basic of those are repetition combinators, which take a parser and perhaps some additional information and return a sequence of matches. Most general repetition operators are =between?= and =breadth?=. They both take a parser, a minimal and maximal number of occurrences, either of which can be =nil=, and optionally a type of the result sequence (a list by default).
+From those core combinators more complex combinators can be constructed[fn:4]. Most basic of those are repetition combinators, which take a parser and perhaps some additional information and return a sequence of matches. Most general repetition operators are =between?= and =breadth?=. They both take a parser, a minimal and maximal number of occurrences, either of which can be =nil=, and optionally a type of the result sequence (a list by default).
 
-[fn:3] Although many built-in combinators are implemented manually with an explicit stack for performance reasons.
+[fn:4] Although many built-in combinators are implemented manually with an explicit stack for performance reasons.
 
 The difference between them is that =between?= will attempt to consume as many matches as possible, unless forced otherwise by backtracking, while =breadth?= will attempt to consume as few as possible, again, unless forced otherwise by backtracking. In most cases the former is more useful. Usually, more specific forms should be used, like =opt?=, =many?=, =many1?=, =times?=, =atleast?= and =atmost?=. See their docstrings for details, but they are fairly obvious specializations. Those have a non-backtracking versions, except obviously =breadth?=, but the same note as with sequence combinators matters, only the first result of the argument parser will ever be used.
 
