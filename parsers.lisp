@@ -422,6 +422,15 @@ parsers."
   "Parser: result of p or nil"
   (choice p (result nil)))
 
+(defun validate? (p validation-function &optional (pre-hook #'identity))
+  "Parser: call validation-function on result of (funcall pre-hook p), fail if it returns nil,
+otherwhise return it as a result"
+  (mdo (<- p-result p)
+       (let ((hooked (funcall pre-hook p-result)))
+         (if (funcall validation-function hooked)
+             (result hooked)
+             (zero)))))
+
 (defmacro named? (name &body body)
   "Parser macro: give BODY a NAME, so it can refer to itself without causing generator recursion."
   (with-unique-names (parser wrapped inp)

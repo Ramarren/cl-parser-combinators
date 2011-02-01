@@ -273,6 +273,10 @@
   ("abc" 5)
   ("bac"))
 
+(defparsertest test-validate? (validate? (many* (item)) (curry #'length= 5))
+  ("12345" '(#\1 #\2 #\3 #\4 #\5))
+  ("1234" "123456"))
+
 (defparsertest test-opt? (named-seq? (<- a "a") (<- b (opt? "b")) (<- c "c") (list a b c))
   ("abc" '(#\a #\b #\c) "ac" '(#\a nil #\c))
   ("abbc" "aabc"))
