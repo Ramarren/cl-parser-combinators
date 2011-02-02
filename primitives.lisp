@@ -15,7 +15,10 @@
 
 (defun zero ()
   "Primitive parser: parsing failure"
-  (constantly nil))
+  #'(lambda (inp)
+      (declare (ignore inp))
+      #'(lambda ()
+          nil)))
 
 (def-cached-parser item
   "Primitive parser: consume item from input and return it."
