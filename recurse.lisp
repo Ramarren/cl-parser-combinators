@@ -1,21 +1,20 @@
 (in-package :parser-combinators)
 
-(defun curtail? (parser &optional (label (gensym)))
-  "Add recursion curtailing to promise."
-  (unless (gethash label *curtail-table*)
-    (setf (gethash label *curtail-table*) (make-hash-table)))
-  (let ((curtail-table (gethash label *curtail-table*)))
-    (labels ((curtailed (inp)
-               (multiple-value-bind (counter counter-p) (gethash (position-of inp) curtail-table)
-                 (cond (counter-p
-                        (destructuring-bind (c . l) counter
-                          (cond ((>= c (1+ l))
-                                 (funcall (zero) inp))
-                                (t
-                                 (incf (car counter))
-                                 (funcall parser inp)))))
-                       (t
-                        (setf (gethash (position-of inp) curtail-table)
-                              (cons 1 (- (length-of inp) (position-of inp))))
-                        (funcall parser inp))))))
-      #'curtailed)))
+;; This is a hack, really.
+(defvar *curtail* nil)
+
+(defmacro curtail? (name &body body)
+  "Parser modifier: add recursion curtailing to PARSER, naming the curtailed parser NAME. Left
+recursive parser parser will only be nested once per remaining length of the input string. Note:
+this is only necessary for a limited class of left recursive parsers. Non-left recursive parsers
+should be implemented using just `named?`, and most left-recursive parsers using that in combination
+with `chainl1?`. Also see `expression?`."
+  (with-unique-names (inp curtail)
+    `(named? ,name
+       #'(lambda (,inp)
+           (let ((,curtail (if *curtail* *curtail* 0)))
+             (if (>= (+ ,curtail (position-of ,inp))
+                     (length-of ,inp))
+                 (funcall (zero) ,inp)
+                 (let ((*curtail* (1+ ,curtail)))
+                   (funcall ,@body ,inp))))))))

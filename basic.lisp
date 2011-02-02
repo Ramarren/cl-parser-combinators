@@ -101,13 +101,11 @@
   (with-unique-names (ignore-gensym)
     (do-notation spec 'bind ignore-gensym)))
 
-(defparameter *curtail-table* (make-hash-table))
 (defparameter *memo-table* (make-hash-table))
 
 (defun parse-string (parser string)
   "Parse a string, return a PARSE-RESULT object. All returned values may share structure."
   (let ((*memo-table* (make-hash-table))
-        (*curtail-table* (make-hash-table))
         (context (make-context string)))
     (values (make-parse-result (funcall parser context))
             (front-of context))))

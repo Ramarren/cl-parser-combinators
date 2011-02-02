@@ -289,3 +289,7 @@
   ("AA(A(AA)A)A" '(#\A #\A (#\A (#\A #\A) #\A) #\A)
    "AAAA" '(#\A #\A #\A #\A))
   ("BAF"))
+
+(defparsertest test-curtail? (curtail? e (choice (seq-list? e #\+ e) #\A))
+  ("A" #\A "A+A" '(#\A #\+ #\A) "A+A+A" '((#\A #\+ #\A) #\+ #\A))
+  ())
