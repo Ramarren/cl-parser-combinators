@@ -72,7 +72,7 @@
   (iter (for i from min-size to max-size by step)
         (print i)
         (for arith-string = (make-random-arith-string i))
-        (sb-ext:gc :full t)
+        #+sbcl(sb-ext:gc :full t)
         (for start-time = (get-internal-real-time))
         (current-result (parse-string parser arith-string))
         (collect (list i
