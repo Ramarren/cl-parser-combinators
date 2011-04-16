@@ -13,4 +13,4 @@ The test suite has some additional dependencies, all of which are in [quicklisp]
 
 # Documentation
 
-The is some documentation in the `doc` directory.
+There is some documentation in the `doc` directory.
