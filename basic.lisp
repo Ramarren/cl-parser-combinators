@@ -103,23 +103,29 @@
 
 (defparameter *memo-table* (make-hash-table))
 
-(defun parse-string (parser string)
-  "Parse a string, return a PARSE-RESULT object. All returned values may share structure."
+(defun parse-sequence (parser sequence)
+  "Parse a sequence (where a sequence is any object which implementes CONTEXT interface), return a
+PARSE-RESULT object. All returned values may share structure."
   (let ((*memo-table* (make-hash-table))
-        (context (make-context string)))
+        (context (make-context sequence)))
     (values (make-parse-result (funcall parser context))
             (front-of context))))
 
-(defun parse-string* (parser string &key (complete nil))
-  "Parse a string and return the first result, whether the parse was incomplete, whether it was
-successful, and the context front as multiple values. The context front is an object containg the
-context latest in the input and a list of lists of parser tags which were current at that point,
-which allows approximate error reporting. It will be nil if the parse is successful and complete.
+(defun parse-string (parser string)
+  "Synonym for parse-sequence. Parse a string, return a PARSE-RESULT object. All returned values may share structure."
+  (parse-sequence parser string))
+
+(defun parse-sequence* (parser sequence &key (complete nil))
+  "Parse a sequence (where a sequence is any object which implementes CONTEXT interface) and return
+as multiple values the first result, whether the parse was incomplete, whether it was successful,
+and the context front. The context front is an object containg the context which most advances the
+input sequence and a list of lists of parser tags which were current at that point, which allows
+approximate error reporting. It will be nil if the parse is successful and complete.
 
  If COMPLETE is T, return the first parse to consume the input
 completely. If COMPLETE is :FIRST return the first result only when it the whole input was consumed,
 or immediately return nil."
-  (multiple-value-bind (parse-result front) (parse-string (ensure-parser parser) string)
+  (multiple-value-bind (parse-result front) (parse-sequence (ensure-parser parser) sequence)
     (ecase complete
       ((nil :first)
          (let ((result
@@ -137,3 +143,15 @@ or immediately return nil."
                (when (end-context-p (suffix-of result))
                  (return (values (tree-of result) nil t nil)))
                (finally (return (values nil nil nil front))))))))
+
+(defun parse-string* (parser string &key (complete nil))
+  "Synonym for parse-sequence*. Parse a string and return as multiple values the first result,
+whether the parse was incomplete, whether it was successful, and the context front. The context
+front is an object containg the context which most advances the input sequence and a list of lists
+of parser tags which were current at that point, which allows approximate error reporting. It will
+be nil if the parse is successful and complete.
+
+ If COMPLETE is T, return the first parse to consume the input
+completely. If COMPLETE is :FIRST return the first result only when it the whole input was consumed,
+or immediately return nil."  
+  (parse-sequence* parser string :complete complete))

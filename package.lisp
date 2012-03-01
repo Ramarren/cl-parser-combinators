@@ -108,7 +108,9 @@
            #:gather-if-not*)
   (:export #:string?-using-context
            #:gather-if-not*-using-context
-           #:validate?)
+           #:validate?
+           #:parse-sequence
+           #:parse-sequence*)
   ;; some function for creating -using-context parsers from other packages
   (:export #:storage-of
            #:common-of
