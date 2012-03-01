@@ -33,7 +33,7 @@
 
 (def-cached-parser word?
   "Parser: accept a string of alphabetic characters"
-  (between? (alphanum?) 1 nil 'string))
+  (between? (letter?) 1 nil 'string))
 
 ;; naive implementation using monadic combinators, unfortunately rather slow
 ;; (defun int? ()
