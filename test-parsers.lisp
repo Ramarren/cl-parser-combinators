@@ -293,3 +293,16 @@
 (defparsertest test-curtail? (curtail? e (choice (seq-list? e #\+ e) #\A))
   ("A" #\A "A+A" '(#\A #\+ #\A) "A+A+A" '((#\A #\+ #\A) #\+ #\A))
   ())
+
+(defparsertest test-quoted? (quoted? :quote-char #\' :escape-char #\- :include-quotes t)
+  ("'AAA'" "'AAA'" "'AB-'C'" "'AB-'C'")
+  ("AAA"))
+
+(defparsertest test-quoted?2 (quoted? :quote-char #\' :escape-char #\- :include-quotes nil)
+  ("'AAA'" "AAA" "'AB-'C'" "AB'C")
+  ("AAA"))
+
+(defparsertest test-quoted?3 (quoted? :left-quote-char #\1 :right-quote-char #\2 :escape-char #\3 :include-quotes nil)
+  ("1AAA2" "AAA" "1AB32C2" "AB2C")
+  ("AAA"))
+
