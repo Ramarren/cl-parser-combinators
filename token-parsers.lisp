@@ -32,7 +32,7 @@
              result-type))
 
 (def-cached-parser word?
-  "Parser: accept a string of alphabetic characters"
+  "Parser: accept a string of alphanumeric characters"
   (between? (alphanum?) 1 nil 'string))
 
 ;; naive implementation using monadic combinators, unfortunately rather slow
