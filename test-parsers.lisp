@@ -6,12 +6,15 @@
 ;;; at least some of them, this is boring, write automatic genetor
 
 (defmacro defparsertest (test-name parser (&rest should-pairs) (&rest fails))
-  `(deftest ,test-name ()
-     ,@(iter (for (string should) on should-pairs by #'cddr)
-             (collect `(is (equal ,should
-                                  (tree-of (current-result (parse-string ,parser ,string)))))))
-     ,@(iter (for string in fails)
-             (collect `(is (null (current-result (parse-string ,parser ,string))))))))
+  (with-gensyms (result)
+    `(deftest ,test-name ()
+       ,@(iter (for (string should) on should-pairs by #'cddr)
+           (collect `(let ((,result (current-result (parse-string ,parser ,string))))
+                       (when (is ,result "Failed to parse ~s" ,string)
+                         (is (equal ,should
+                                    (tree-of ,result)))))))
+       ,@(iter (for string in fails)
+           (collect `(is (null (current-result (parse-string ,parser ,string)))))))))
 
 (defparsertest test-char? (char? #\a)
   ("a" #\a)
