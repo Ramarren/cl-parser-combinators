@@ -119,8 +119,8 @@ non-recursively and has better memory performance."
               :accept-empty accept-empty))
 
 (def-cached-parser word*
-  "Parser: accept a string of alphabetic characters"
-  (gather-if* #'alpha-char-p :result-type 'string))
+  "Parser: accept a string of alphanumeric characters"
+  (gather-if* #'alphanumericp :result-type 'string))
 
 (defun nat* (&optional (radix 10))
   "Non-backtracking parser: accept natural number, consuming as many digits as possible"

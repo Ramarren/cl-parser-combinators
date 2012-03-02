@@ -37,8 +37,12 @@
   (" " ","))
 
 (defparsertest test-word? (word?)
-  ("abc" "abc" )
-  ("   " "123"))
+  ("abc" "abc" "123" "123" "abc!def" "abc")
+  ("   " ";,!"))
+
+(defparsertest test-word* (word*)
+  ("abc" "abc" "123" "123" "abc!def" "abc")
+  ("   " ";,!"))
 
 (defparsertest test-string? (string? (list #\a #\b #\c) :result-type 'list)
   ("abc" (list #\a #\b #\c) "abcd" (list #\a #\b #\c))
