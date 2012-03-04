@@ -35,6 +35,10 @@
   "Parser: accept a string of alphanumeric characters"
   (between? (alphanum?) 1 nil 'string))
 
+(def-cached-parser pure-word?
+  "Parser: accept a string of alphabetic characters"
+  (between? (letter?) 1 nil 'string))
+
 ;; naive implementation using monadic combinators, unfortunately rather slow
 ;; (defun int? ()
 ;;   "Parser: accept an integer"

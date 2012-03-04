@@ -122,6 +122,10 @@ non-recursively and has better memory performance."
   "Parser: accept a string of alphanumeric characters"
   (gather-if* #'alphanumericp :result-type 'string))
 
+(def-cached-parser pure-word*
+  "Parser: accept a string of alphabetic characters"
+  (gather-if* #'alpha-char-p :result-type 'string))
+
 (defun nat* (&optional (radix 10))
   "Non-backtracking parser: accept natural number, consuming as many digits as possible"
   (named-seq* (<- number (gather-if* (rcurry #'digit-char-p radix) :result-type 'string))

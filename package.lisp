@@ -111,7 +111,9 @@
            #:validate?
            #:parse-sequence
            #:parse-sequence*
-           #:quoted?)
+           #:quoted?
+           #:pure-word?
+           #:pure-word*)
   ;; some function for creating -using-context parsers from other packages
   (:export #:storage-of
            #:common-of
