@@ -13,11 +13,11 @@
 ;;; backtracking and constructing results.
 
 ;;; By convention parsers are named with symbols which names end with '?' for backtracking parsers,
-;;; and '*' for non-backtrackng parsers. If the parser cannot backtrack because it is unambigous
+;;; and '*' for non-backtracking parsers. If the parser cannot backtrack because it is unambiguous
 ;;; over the input then '?' should be the default, to indicate there is not backtracking version.
 (defun field? ()
   ;; A field can be terminated by a comma or a carriage return, if final in the record. A
-  ;; gather-if-not* parser has a more effiecient implementation for strings than a possible
+  ;; gather-if-not* parser has a more efficient implementation for strings than a possible
   ;; implementation using breadth? or many? with excluded characters.
 
   ;; Parser combinators can take arbitrary parameters that are not parser combinators themselves. In
@@ -41,7 +41,7 @@
   ;;; a variable outside of MDO macro.
   (let ((field? (field?)))
    (mdo
-     ;; Withing MDO <- assigns to a variable visible to all following combinator expressions. We
+     ;; Within MDO <- assigns to a variable visible to all following combinator expressions. We
      ;; cannot just use (<- end (end?)) since it would fail to match if not at the end triggering
      ;; alternative parsing choices above, or failing the entire parse. To avoid this it is wrapped
      ;; in choice1 combinator. RESULT is a primitive constructor which consumes no input and returns
@@ -91,7 +91,7 @@
 ;;; sequences for which context methods are defined) executes a parser over input and lazily
 ;;; computes all possible results as requested. PARSE-STRING* tries to find a first (possibly
 ;;; limited to those which consume the whole input string) result and returns it. For cases where
-;;; the input should be unambigous PARSE-STRING* is more directly useful.
+;;; the input should be unambiguous PARSE-STRING* is more directly useful.
 (defun parse-csv (csv-string &key (complete t) (line-terminator :crlf) (include-quotes nil))
   (parse-string* (csv? :include-quotes include-quotes :line-terminator line-terminator)
                  csv-string
