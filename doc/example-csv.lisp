@@ -14,7 +14,7 @@
 
 ;;; By convention parsers are named with symbols which names end with '?' for backtracking parsers,
 ;;; and '*' for non-backtracking parsers. If the parser cannot backtrack because it is unambiguous
-;;; over the input then '?' should be the default, to indicate there is not backtracking version.
+;;; over the input then '?' should be the default, to indicate there is no backtracking version.
 (defun field? ()
   ;; A field can be terminated by a comma or a carriage return, if final in the record. A
   ;; gather-if-not* parser has a more efficient implementation for strings than a possible
