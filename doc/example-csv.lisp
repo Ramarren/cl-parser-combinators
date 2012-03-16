@@ -13,8 +13,27 @@
 ;;; backtracking and constructing results.
 
 ;;; By convention parsers are named with symbols which names end with '?' for backtracking parsers,
-;;; and '*' for non-backtracking parsers. If the parser cannot backtrack because it is unambiguous
-;;; over the input then '?' should be the default, to indicate there is no backtracking version.
+;;; and '*' for non-backtracking version of parsers. If the parser cannot backtrack because it is
+;;; unambiguous over the input then '?' should be the default, to indicate there is no backtracking
+;;; version.
+
+;;; To be more explicit: the parser can either be ambiguous, in which case there are inputs that
+;;; executing the parser over which will yield several results, and in which case the '?' version
+;;; should return all of them lazily, so that they can be monadically combined. The '*' version of
+;;; that parser should only return one result (and then report a failure to match if another result
+;;; is requested), which sometimes allows a lot of optimization and might prevent unnecessary
+;;; backtracking, although of course this should be used only if it is certain that for the specific
+;;; class of inputs considered the first match is the correct one. This is for example common for
+;;; repetition parsers. If the repeated element cannot be a part of the following syntax and the
+;;; elements themselves are unambigous, the repetition parser can just accumulate the elements
+;;; without having to keep track of intermediate matches.
+
+;;; For certain class of parsers there is only one result for all possible matching inputs (for
+;;; example a simple string match, which either matches or not). In that case the '?' and '*'
+;;; versions would be identical and there is no reason to define both of them. I decided to define
+;;; only the '?' version. That is all convention of course, the combinator system can't and doesn't
+;;; see the names of the generator/combiners anyway.
+
 (defun field? ()
   ;; A field can be terminated by a comma or a carriage return, if final in the record. A
   ;; gather-if-not* parser has a more efficient implementation for strings than a possible
