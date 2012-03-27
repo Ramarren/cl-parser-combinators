@@ -44,6 +44,14 @@
   ("   " nil " " nil)
   ("a" ","))
 
+(defparsertest test-whitespace?2 (whitespace? :accept-empty t)
+  ("" nil)
+  ())
+
+(defparsertest test-whitespace*2 (whitespace* :accept-empty t)
+  ("" nil)
+  ())
+
 (defparsertest test-word? (word?)
   ("abc" "abc" "123" "123" "abc!def" "abc")
   ("   " ";,!"))
