@@ -210,7 +210,9 @@ parsers."
                             (zero-width
                              (setf zero-width nil)
                              (make-instance 'parser-possibility
-                                            :tree (coerce nil result-type)
+                                            ;; use map to gurantee the result type is handled the
+                                            ;; same way as in the case above
+                                            :tree (map result-type #'identity nil)
                                             :suffix inp))))))))))))
 
 (defun many? (parser)
