@@ -29,7 +29,7 @@
   (between? (sat (rcurry #'member '(#\Space #\Newline #\	)))
             (if accept-empty nil 1)
             nil
-             result-type))
+            result-type))
 
 (def-cached-parser word?
   "Parser: accept a string of alphanumeric characters"
