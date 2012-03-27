@@ -36,6 +36,14 @@
   ("A" #\A "b" #\b "1" #\1 "5" #\5)
   (" " ","))
 
+(defparsertest test-whitespace? (whitespace?)
+  ("   " nil " " nil)
+  ("a" ","))
+
+(defparsertest test-whitespace* (whitespace*)
+  ("   " nil " " nil)
+  ("a" ","))
+
 (defparsertest test-word? (word?)
   ("abc" "abc" "123" "123" "abc!def" "abc")
   ("   " ";,!"))
