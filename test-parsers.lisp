@@ -308,6 +308,14 @@
   ("12345" '(#\1 #\2 #\3 #\4 #\5))
   ("1234" "123456"))
 
+(defparsertest test-except? (except? (many* (item)) "a")
+    ("123" '(#\1 #\2 #\3) "cba" '(#\c #\b #\a))
+    ("abc"))
+
+(defparsertest test-except?2 (except? (gather-before-token* #\; :accept-empty t :accept-end t) (end?))
+    ("123;" '(#\1 #\2 #\3) ";" nil "123" '(#\1 #\2 #\3))
+    (""))
+
 (defparsertest test-opt? (named-seq? (<- a "a") (<- b (opt? "b")) (<- c "c") (list a b c))
   ("abc" '(#\a #\b #\c) "ac" '(#\a nil #\c))
   ("abbc" "aabc"))
