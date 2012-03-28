@@ -52,6 +52,8 @@
 ;;; then it would create a spurious record with a single empty field in the parse.
 
 ;;; One way to resolve that is to fail the parse at end of input when attempting to locate a field.
+;;; This is implemented in the EXCEPT? parser combinator, but it is a basic MDO example, so let us
+;;; reimplement this here.
 (defun real-field? ()
   ;;; MDO (monadic do, which is a macro providing sugar over monadic BIND) can be used to create a
   ;;; parser depending on the result of some previous parsers. While powerful, this can be
