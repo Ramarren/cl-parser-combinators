@@ -433,6 +433,15 @@ otherwhise return it as a result"
              (result hooked)
              (zero)))))
 
+(defun except? (p q)
+  "Parser: match p unless q matches."
+  (let ((not-q-result (gensym)))
+    (with-parsers (p q)
+      (mdo (<- maybe-q-result (choice1 q (result not-q-result)))
+        (if (eql maybe-q-result not-q-result)
+            p
+            (zero))))))
+
 (defmacro named? (name &body body)
   "Parser macro: give BODY a NAME, so it can refer to itself without causing generator recursion."
   (with-unique-names (parser wrapped inp)

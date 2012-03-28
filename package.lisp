@@ -113,7 +113,8 @@
            #:parse-sequence*
            #:quoted?
            #:pure-word?
-           #:pure-word*)
+           #:pure-word*
+           #:except?)
   ;; some function for creating -using-context parsers from other packages
   (:export #:storage-of
            #:common-of
