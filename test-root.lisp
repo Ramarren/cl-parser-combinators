@@ -1,5 +1,4 @@
-(defpackage :parser-combinators-tests (:use :cl :hu.dwim.stefil :iterate :parser-combinators :alexandria)
-  (:import-from :fare-matcher #:match #:like-when))
+(defpackage :parser-combinators-tests (:use :cl :hu.dwim.stefil :iterate :parser-combinators :alexandria))
 
 (in-package :parser-combinators-tests)
 

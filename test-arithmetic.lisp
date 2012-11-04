@@ -37,36 +37,15 @@
                       (collect (digit-char (1+ (random 9))))))
           'string))
 
-(defun collapse-ops (op-tree)
-  (labels ((collapse-top (op-tree)
-             (match op-tree
-               ((like-when (list* op1 (cons op2 inner) outer) (eql op1 op2))
-                (collapse-ops (list* op1 (mapcar #'collapse-ops (append inner outer)))))
-               (thing
-                thing))))
-    (match op-tree
-      ((like-when (list* op1 (cons op2 inner) outer) (eql op1 op2))
-       (collapse-top (list* op1 (mapcar #'collapse-ops (append inner outer)))))
-      ((cons op args)
-       (collapse-top (list* op (mapcar #'collapse-ops args))))
-      (thing
-       thing))))
-
 (deftest test-random-arith ()
   (iter (repeat 100)
         (let ((arith-string (make-random-arith-string 100)))
           (is (handler-case
                   (= (eval (infix:string->prefix arith-string))
-                     (eval (collapse-ops (tree-of (current-result (parse-string (arith*) arith-string))))))
+                     (eval (tree-of (current-result (parse-string (arith*) arith-string)))))
                 (division-by-zero ()
                   (print 'division-by-zero)
                   t))))))
-
-(deftest test-print-random-arith (size)
-  (let ((arith-string (make-random-arith-string size)))
-    (print arith-string)
-    (is (equal (print (infix:string->prefix arith-string))
-               (print (collapse-ops (tree-of (current-result (parse-string (arith*) arith-string)))))))))
 
 (defun measure-time (min-size max-size step &optional (parser (arith*)))
   (iter (for i from min-size to max-size by step)

@@ -55,7 +55,7 @@
         (let ((arith-string (make-random-arith-string 100)))
           (is (handler-case
                   (= (eval (infix:string->prefix arith-string))
-                     (eval (collapse-ops (tree-of (current-result (parse-string (expr-arith*) arith-string))))))
+                     (eval (tree-of (current-result (parse-string (expr-arith*) arith-string)))))
                 (division-by-zero ()
                   (print 'division-by-zero)
                   t))))))
