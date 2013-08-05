@@ -102,6 +102,12 @@
     (do-notation spec 'bind ignore-gensym)))
 
 (defparameter *memo-table* (make-hash-table))
+(defparameter *seen-positions-table* nil)
+
+(defun note-position (posn)
+  (declare ((integer 0) posn)
+           (special *seen-positions-table*))
+  (incf (gethash posn *seen-positions-table* 0)))
 
 (defun parse-sequence (parser sequence)
   "Parse a sequence (where a sequence is any object which implementes CONTEXT interface), return a
@@ -116,18 +122,22 @@ PARSE-RESULT object. All returned values may share structure."
   (parse-sequence parser string))
 
 (defun parse-sequence* (parser sequence &key (complete nil))
-  "Parse a sequence (where a sequence is any object which implementes CONTEXT interface) and return
-as multiple values the first result, whether the parse was incomplete, whether it was successful,
-and the context front. The context front is an object containg the context which most advances the
-input sequence and a list of lists of parser tags which were current at that point, which allows
-approximate error reporting. It will be nil if the parse is successful and complete.
+  "Parse a sequence (where a sequence is any object which implementes CONTEXT interface) and
+return as multiple values the first result, whether the parse was incomplete, whether it was
+successful, the context front and the position frequency table.  The context front is an object
+containing the context which most advances the input sequence and a list of lists of parser
+tags which were current at that point, which allows approximate error reporting.  It will be
+NIL if the parse is successful and complete.  The position frequency table serves profiling
+needs and maps sequence positions to the number of times a new context was created at that
+position -- which should provide a rough hint at how problematic that particular spot is.
 
  If COMPLETE is T, return the first parse to consume the input
 completely. If COMPLETE is :FIRST return the first result only when it the whole input was consumed,
 or immediately return nil."
-  (multiple-value-bind (parse-result front) (parse-sequence (ensure-parser parser) sequence)
-    (ecase complete
-      ((nil :first)
+  (let ((*seen-positions-table* (make-hash-table)))
+    (multiple-value-bind (parse-result front) (parse-sequence (ensure-parser parser) sequence)
+      (ecase complete
+        ((nil :first)
          (let ((result
                 (current-result parse-result)))
            (cond ((or (null result)
@@ -136,20 +146,23 @@ or immediately return nil."
                   (values nil nil nil front))
                  ((not (end-context-p (suffix-of result)))
                   (values (tree-of result) (suffix-of result) t front))
-                 (t (values (tree-of result) nil t nil)))))
-      (t (iter (with results = parse-result)
-               (for result = (next-result results))
-               (while result)
-               (when (end-context-p (suffix-of result))
-                 (return (values (tree-of result) nil t nil)))
-               (finally (return (values nil nil nil front))))))))
+                 (t (values (tree-of result) nil t nil *seen-positions-table*)))))
+        (t (iter (with results = parse-result)
+                 (for result = (next-result results))
+                 (while result)
+                 (when (end-context-p (suffix-of result))
+                   (return (values (tree-of result) nil t nil)))
+                 (finally (return (values nil nil nil front *seen-positions-table*)))))))))
 
 (defun parse-string* (parser string &key (complete nil))
-  "Synonym for parse-sequence*. Parse a string and return as multiple values the first result,
-whether the parse was incomplete, whether it was successful, and the context front. The context
-front is an object containg the context which most advances the input sequence and a list of lists
-of parser tags which were current at that point, which allows approximate error reporting. It will
-be nil if the parse is successful and complete.
+  "Synonym for parse-sequence*.  Parse a string and return as multiple values the first result,
+whether the parse was incomplete, whether it was successful, the context front, and the
+position frequency table.  The context front is an object containing the context which most
+advances the input sequence and a list of lists of parser tags which were current at that
+point, which allows approximate error reporting.  It will be NIL if the parse is successful and
+complete.  The position frequency table serves profiling needs and maps sequence positions to
+the number of times a new context was created at that position -- which should provide a rough
+hint at how problematic that particular spot is.
 
  If COMPLETE is T, return the first parse to consume the input
 completely. If COMPLETE is :FIRST return the first result only when it the whole input was consumed,
