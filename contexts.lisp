@@ -47,6 +47,7 @@
 
 (defmethod make-context-at-position :around ((context context) position)
   (let ((cache (cache-of context)))
+    (note-position position)
     (etypecase cache
       (null (call-next-method))
       (vector (or (aref cache position)
@@ -178,6 +179,12 @@
                      :common (make-instance 'context-common
                                             :length (length list)
                                             :cache (make-cache cache-type (length list))))))
+
+(defmethod initialize-instance :around ((context context) &rest initargs &key &allow-other-keys)
+  (declare (ignore initargs))
+  (let ((rest (call-next-method)))
+    (note-position (slot-value rest 'position))
+    rest))
 
 (defmethod make-context ((vector vector) &optional (cache-type *default-context-cache*))
   (if (zerop (length vector))
