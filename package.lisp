@@ -114,7 +114,10 @@
            #:quoted?
            #:pure-word?
            #:pure-word*
-           #:except?)
+           #:except?
+           #:format?
+           #:*parser-debug-stream*
+           #:check?)
   ;; some function for creating -using-context parsers from other packages
   (:export #:storage-of
            #:common-of
