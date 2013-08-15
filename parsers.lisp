@@ -435,10 +435,11 @@ format string with arguments ARGS to the *PARSER-DEBUG-STREAM*."
   "Utility macro: every time the parser is being matched prints a message to *PARSER-DEBUG-STREAM*
 before a match attempt and after a successul match. The parser is printed in source form."
   (with-gensyms (result)
-    `(mdo (format? "~S ?~%" ',parser)
-       (<- ,result ,parser)
-       (format? "~S ok - ~S~%" ',parser ,result)
-       (result ,result))))
+    `(named-seq*
+      (format? "~S ?~%" ',parser)
+      (<- ,result ,parser)
+      (format? "~S ok - ~S~%" ',parser ,result)
+      ,result)))
 
 (defun opt? (p)
   "Parser: result of p or nil"
