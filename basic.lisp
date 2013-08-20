@@ -145,14 +145,14 @@ or immediately return nil."
                            (not (end-context-p (suffix-of result)))))
                   (values nil nil nil front))
                  ((not (end-context-p (suffix-of result)))
-                  (values (tree-of result) (suffix-of result) t front))
+                  (values (tree-of result) (suffix-of result) t front *seen-positions-table*))
                  (t (values (tree-of result) nil t nil *seen-positions-table*)))))
         (t (iter (with results = parse-result)
                  (for result = (next-result results))
                  (while result)
                  (when (end-context-p (suffix-of result))
-                   (return (values (tree-of result) nil t nil)))
-                 (finally (return (values nil nil nil front *seen-positions-table*)))))))))
+                   (return (values (tree-of result) nil t nil *seen-positions-table*)))
+                 (finally (return (values nil nil nil front)))))))))
 
 (defun parse-string* (parser string &key (complete nil))
   "Synonym for parse-sequence*.  Parse a string and return as multiple values the first result,
