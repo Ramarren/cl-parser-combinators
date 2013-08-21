@@ -420,6 +420,13 @@ parsers."
   "Parser: return result if p matches"
   (named-seq? p result))
 
+(defun chookahead? (result p)
+  "Parser: return result if p matches, but do no advance"
+  (with-parsers (p)
+    (define-oneshot-result inp is-unread
+      (let ((p-result (funcall (funcall p inp))))
+        (when p-result
+          (make-instance 'parser-possibility :tree result :suffix inp))))))
 
 (defun opt? (p)
   "Parser: result of p or nil"

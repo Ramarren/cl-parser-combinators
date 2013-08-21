@@ -88,6 +88,7 @@
            #:find?
            #:hook?
            #:chook?
+           #:chookahead?
            #:opt?
            #:opt*
            #:parse-string*
