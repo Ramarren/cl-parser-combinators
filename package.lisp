@@ -105,6 +105,7 @@
            #:named-seq?
            #:seq-list*
            #:named-seq*
+           #:mdo*
            #:gather-if-not*)
   (:export #:string?-using-context
            #:gather-if-not*-using-context
