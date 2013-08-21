@@ -134,4 +134,5 @@
            #:with-posn-info?
            #:*debug-mode*
            #:*debug-print-result*
-           #:check?))
+           #:check?
+           #:c?))

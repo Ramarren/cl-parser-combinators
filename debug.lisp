@@ -117,3 +117,7 @@ Does not advance the position."
 before a match attempt and after a successul match, but only if *DEBUG-MODE* is non-NIL.
 The parser is printed in source form, accompanied with the line/column and next character."
   `(call-with-maybe-tracing *debug-mode* ',x (lambda () ,x)))
+
+(defmacro c? (form)
+  "An ergonomic shortcut for CHECK?"
+  `(check? ,form))
