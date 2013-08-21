@@ -305,6 +305,17 @@ non-recursively and has better memory performance."
                                                     (tree-of q-result))
                                         :suffix (suffix-of q-result)))))))))
 
+(defun before* (p q)
+  "Non-backtracking parser: Find a p before q, doesn't consume q."
+  (with-parsers (p q)
+    (define-oneshot-result inp is-unread
+      (let ((p-result (funcall (funcall p inp))))
+        (when p-result
+          (let* ((p-suffix (suffix-of p-result))
+                 (q-result (funcall (funcall q p-suffix))))
+            (when (and p-result q-result)
+              (make-instance 'parser-possibility :tree (tree-of p-result) :suffix p-suffix))))))))
+
 (defun find* (q)
   "Non-backtracking parser: Find first q"
   (find-after* (item) q))

@@ -101,6 +101,7 @@
            #:position-of
            #:find-before-token*
            #:gather-before-token*
+           #:before*
            #:seq-list?
            #:named-seq?
            #:seq-list*
