@@ -114,10 +114,7 @@
            #:quoted?
            #:pure-word?
            #:pure-word*
-           #:except?
-           #:format?
-           #:*parser-debug-stream*
-           #:check?)
+           #:except?)
   ;; some function for creating -using-context parsers from other packages
   (:export #:storage-of
            #:common-of
@@ -126,3 +123,15 @@
            #:define-oneshot-result
            #:make-context-at-position
            #:parser-possibility))
+
+(defpackage :parser-combinators-debug
+  (:use :cl :iterate :alexandria :parser-combinators)
+  ;; debug infrastructure
+  (:export #:format?
+           #:*parser-debug-stream*
+           #:with-position-cache
+           #:string-position
+           #:with-posn-info?
+           #:*debug-mode*
+           #:*debug-print-result*
+           #:check?))
