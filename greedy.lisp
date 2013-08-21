@@ -28,6 +28,14 @@ This parser generator is useful when full generality of MDO is not necessary, as
 non-recursively and has better memory performance."
   `(%named-seq? seq-list* ,@parser-descriptions))
 
+(defmacro mdo* (&body spec)
+  "Like NAMED-SEQ*, but with MDO syntax: the last element must be a parser."
+  (with-gensyms (ret)
+    `(named-seq*
+      ,@(butlast spec)
+      (<- ,ret ,(lastcar spec))
+      ,ret)))
+
 (defun between* (parser min max &optional (result-type 'list))
   "Non-backtracking parser: find the first, longest chain of expression accepted by parser of length between min and max"
   (assert (or (null min)
@@ -296,6 +304,17 @@ non-recursively and has better memory performance."
                                         :tree (cons (map result-type #'tree-of p-results)
                                                     (tree-of q-result))
                                         :suffix (suffix-of q-result)))))))))
+
+(defun before* (p q)
+  "Non-backtracking parser: Find a p before q, doesn't consume q."
+  (with-parsers (p q)
+    (define-oneshot-result inp is-unread
+      (let ((p-result (funcall (funcall p inp))))
+        (when p-result
+          (let* ((p-suffix (suffix-of p-result))
+                 (q-result (funcall (funcall q p-suffix))))
+            (when (and p-result q-result)
+              (make-instance 'parser-possibility :tree (tree-of p-result) :suffix p-suffix))))))))
 
 (defun find* (q)
   "Non-backtracking parser: Find first q"

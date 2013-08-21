@@ -420,25 +420,13 @@ parsers."
   "Parser: return result if p matches"
   (named-seq? p result))
 
-(defparameter *parser-debug-stream* *standard-output*
-  "The stream to which messages from FORMAT? are directed.")
-
-(defun format? (fmt &rest args)
-  "Always successful zero width match with NIL as parse result, as a side effect prints the FMT
-format string with arguments ARGS to the *PARSER-DEBUG-STREAM*."
-  (define-oneshot-result inp is-unread
-    (apply #'format *parser-debug-stream* fmt args)
-    (make-instance 'parser-possibility
-                   :tree nil :suffix inp)))
-
-(defmacro check? (parser)
-  "Utility macro: every time the parser is being matched prints a message to *PARSER-DEBUG-STREAM*
-before a match attempt and after a successul match. The parser is printed in source form."
-  (with-gensyms (result)
-    `(mdo (format? "~S ?~%" ',parser)
-       (<- ,result ,parser)
-       (format? "~S ok - ~S~%" ',parser ,result)
-       (result ,result))))
+(defun chookahead? (result p)
+  "Parser: return result if p matches, but do no advance"
+  (with-parsers (p)
+    (define-oneshot-result inp is-unread
+      (let ((p-result (funcall (funcall p inp))))
+        (when p-result
+          (make-instance 'parser-possibility :tree result :suffix inp))))))
 
 (defun opt? (p)
   "Parser: result of p or nil"
