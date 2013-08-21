@@ -14,13 +14,21 @@
 (defclass parse-result-store ()
   ((storage      :accessor storage-of      :initarg :storage      :initform (make-array 3 :initial-element nil))
    (counter      :accessor counter-of      :initarg :counter :initform 0)
-   (continuation :accessor continuation-of :initarg :continuation :initform (constantly nil))))
+   (continuation :accessor continuation-of :initarg :continuation :initform (constantly nil)))
+  (:documentation
+   "Track a set of parse results, of which COUNTER are already computed and placed in STORAGE,
+   and an unknown remainder is to be realised by repetitively calling CONTINUATION."))
 
 (defclass parse-result ()
   ((store   :accessor store-of   :initarg :store :initform nil)
-   (current :accessor current-of :initarg :current :initform -1)))
+   (current :accessor current-of :initarg :current :initform -1))
+  (:documentation
+   "Represent a set of parse results, as tracked by STORE, with one of them deemed CURRENT."))
 
 (defgeneric nth-result (n parse-result-store)
+  (:documentation
+   "Attempt to realise all results within PARSE-RESULT-STORE upto and including the N-th one,
+   and return that upon success.  Otherwise return NIL.")
   (:method (n (parse-result-store null))
     (declare (ignore n parse-result-store))
     nil)
@@ -48,6 +56,7 @@
                            (return next-result))))))))
 
 (defun make-parse-result (continuation)
+  "Document all potential results of CONTINUATION as a PARSE-RESULT object."
   (make-instance 'parse-result :store
                  (make-instance 'parse-result-store :continuation continuation)))
 
@@ -61,6 +70,8 @@
   (current-result parse-result))
 
 (defun gather-results (parse-result)
+  "Obtain all of the results within PARSE-RESULT, starting with the current one, potentially
+realising the non-realised ones in the backing store."
   (let ((current-result (current-result parse-result))
         (continuation-results
          (iter (for result next (next-result parse-result))
