@@ -7,9 +7,10 @@
    (tags    :accessor tags-of    :initarg :tags    :initform nil)))
 
 (defclass context-common ()
-  ((length      :accessor length-of      :initarg :length      :initform 0)
-   (front       :accessor front-of       :initarg :front       :initform (make-instance 'context-front))
-   (cache       :accessor cache-of       :initarg :cache       :initform nil)))
+  ((length        :accessor length-of        :initarg :length        :initform 0)
+   (front         :accessor front-of         :initarg :front         :initform (make-instance 'context-front))
+   (cache         :accessor cache-of         :initarg :cache         :initform nil)
+   (seen-postions :accessor seen-postions-of :initarg :seen-position :initform (make-hash-table))))
 
 (defclass context ()
   ((common      :accessor common-of      :initarg :common)
@@ -23,6 +24,9 @@
 
 (defmethod front-of ((context context))
   (front-of (common-of context)))
+
+(defmethod seen-positions-of ((context context))
+  (seen-postions-of (common-of context)))
 
 (defmethod (setf front-of) (new-value (context context))
   (setf (front-of (common-of context)) new-value))
@@ -41,13 +45,17 @@
                                        `(,initarg (,accessor ,context)))))
                   ,@additional-arguments))
 
+(defun note-position (context posn)
+  (declare (type (integer 0) posn))
+  (incf (gethash posn (seen-positions-of context) 0)))
+
 (defgeneric context-peek (context))
 
 (defgeneric make-context-at-position (base-context position))
 
 (defmethod make-context-at-position :around ((context context) position)
   (let ((cache (cache-of context)))
-    (note-position position)
+    (note-position context position)
     (etypecase cache
       (null (call-next-method))
       (vector (or (aref cache position)
@@ -183,7 +191,7 @@
 (defmethod initialize-instance :around ((context context) &rest initargs &key &allow-other-keys)
   (declare (ignore initargs))
   (let ((rest (call-next-method)))
-    (note-position (slot-value rest 'position))
+    (note-position context (slot-value rest 'position))
     rest))
 
 (defmethod make-context ((vector vector) &optional (cache-type *default-context-cache*))
