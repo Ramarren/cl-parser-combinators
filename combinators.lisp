@@ -3,7 +3,7 @@
 ;;; emulating monads... did I even understand those?
 ;;; bind      :: Parser a -> (a -> Parser b) -> Parser b
 ;;;              (parser-tree1 function-from-tree1-to-parser-tree2)=>parser-tree2
-;;; p ‘bind‘ f = \inp -> concat [f v inp’ | (v,inp’) <- p inp]
+;;; p `bind` f = \inp -> concat [f v inp' | (v,inp') <- p inp]
 ;;; (bind p f inp)=(concat list-comprehension)
 
 (defun execute-bind (inp parser parser-generator) ;return continuation function
